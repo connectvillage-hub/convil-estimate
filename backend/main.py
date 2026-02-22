@@ -13,6 +13,7 @@ app = FastAPI(
 allowed_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://convil-estimate.vercel.app",
 ]
 # 배포 환경에서는 FRONTEND_URL 환경변수로 프론트엔드 도메인 추가
 frontend_url = os.getenv("FRONTEND_URL")

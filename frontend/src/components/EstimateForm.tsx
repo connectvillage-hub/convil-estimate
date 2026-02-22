@@ -59,7 +59,8 @@ export default function EstimateForm({ form, onChange }: Props) {
   const handleDownload = async (type: 'excel' | 'pdf') => {
     setDownloading(type);
     try {
-      const endpoint = type === 'excel' ? '/api/estimate/generate-excel' : '/api/estimate/generate-pdf';
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const endpoint = apiBase + (type === 'excel' ? '/api/estimate/generate-excel' : '/api/estimate/generate-pdf');
       const mimeType =
         type === 'excel'
           ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
