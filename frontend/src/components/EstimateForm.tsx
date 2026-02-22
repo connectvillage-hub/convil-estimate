@@ -59,7 +59,7 @@ export default function EstimateForm({ form, onChange }: Props) {
   const handleDownload = async (type: 'excel' | 'pdf') => {
     setDownloading(type);
     try {
-      const apiBase = import.meta.env.DEV ? '' : 'https://convil-estimate.onrender.com';
+      const apiBase = window.location.hostname === 'localhost' ? '' : 'https://convil-estimate.onrender.com';
       const endpoint = apiBase + (type === 'excel' ? '/api/estimate/generate-excel' : '/api/estimate/generate-pdf');
       const mimeType =
         type === 'excel'
