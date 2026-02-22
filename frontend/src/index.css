@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    @apply font-sans text-gray-800 bg-gray-50;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+@layer components {
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  .form-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition-all;
+  }
+  .form-select {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition-all bg-white;
+  }
+  .section-card {
+    @apply bg-white rounded-xl border border-gray-200 p-5 shadow-sm;
+  }
+  .section-title {
+    @apply text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100;
+  }
+  .radio-option {
+    @apply flex items-center gap-2 cursor-pointer;
+  }
+  .radio-option input[type="radio"] {
+    @apply accent-primary-500 w-4 h-4;
+  }
+  .checkbox-option {
+    @apply flex items-center gap-2 cursor-pointer;
+  }
+  .checkbox-option input[type="checkbox"] {
+    @apply accent-primary-500 w-4 h-4;
+  }
+  .btn-primary {
+    @apply bg-primary-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-600 active:bg-primary-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply bg-white text-primary-600 border border-primary-300 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex items-center gap-2;
+  }
+  .btn-danger {
+    @apply text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition-colors;
+  }
+  .btn-ghost {
+    @apply text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2 text-sm transition-colors flex items-center gap-2;
+  }
+}
