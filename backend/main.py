@@ -1,12 +1,21 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from database import engine, Base
 from routers.estimate import router as estimate_router
+from routers.materials import router as materials_router
+
+# ORM 모델 임포트 (테이블 생성용)
+import models.material  # noqa: F401
+import models.project  # noqa: F401
+
+# DB 테이블 생성
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="컨빌 디자인 견적서 API",
     description="인테리어 설계 회사 컨빌디자인 견적서 자동 생성 시스템",
-    version="1.0.0",
+    version="2.0.0",
 )
 
 # CORS 설정
@@ -30,6 +39,7 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(estimate_router)
+app.include_router(materials_router)
 
 
 @app.get("/")

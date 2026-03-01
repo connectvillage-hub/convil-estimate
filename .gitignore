@@ -19,3 +19,9 @@ Thumbs.db
 
 # Fonts (downloaded at build time)
 backend/fonts/*.ttf
+
+# Database
+backend/data/*.db
+
+# SketchUp plugin build
+*.rbz

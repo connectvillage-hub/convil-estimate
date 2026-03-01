@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import EstimatePage from './pages/EstimatePage';
+import MaterialsPage from './pages/MaterialsPage';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/estimate" replace />} />
             <Route path="/estimate" element={<EstimatePage />} />
+            <Route path="/materials" element={<MaterialsPage />} />
           </Routes>
         </main>
       </div>
