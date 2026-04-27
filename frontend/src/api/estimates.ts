@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { EstimateFormData } from '../types/estimate';
+import type { EstimateFormData, ClientType } from '../types/estimate';
 
 const getApiBase = () =>
   window.location.hostname === 'localhost'
@@ -12,6 +12,7 @@ export interface SavedEstimateListItem {
   projectName: string;
   estimateDate: string;
   finalAmount: number;
+  clientType: ClientType;
   createdAt: string;
   updatedAt: string;
 }

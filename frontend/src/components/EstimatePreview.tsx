@@ -18,7 +18,14 @@ export default function EstimatePreview({ form, result }: Props) {
       {/* ── 헤더 ── */}
       <div className="bg-[#2E75B6] px-6 py-4 flex items-center justify-between">
         <div>
-          <h2 className="text-white font-bold text-xl tracking-wide">견 적 서</h2>
+          <h2 className="text-white font-bold text-xl tracking-wide flex items-center gap-2">
+            견 적 서
+            {form.clientType === 'contractor' && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-300 text-amber-900 tracking-normal">
+                시공사
+              </span>
+            )}
+          </h2>
           <p className="text-blue-200 text-xs mt-0.5">ESTIMATE / QUOTATION</p>
         </div>
         <div className="text-right text-white">
@@ -38,7 +45,7 @@ export default function EstimatePreview({ form, result }: Props) {
               <span className="text-sm font-medium">{form.estimateDate || today}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 w-20">고객명</span>
+              <span className="text-xs text-gray-400 w-20">{form.clientType === 'contractor' ? '시공사명' : '고객명'}</span>
               <span className="text-sm font-medium">{form.customerName || '—'}</span>
             </div>
             <div className="flex items-center gap-2">

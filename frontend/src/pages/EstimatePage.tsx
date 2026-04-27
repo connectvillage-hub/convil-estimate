@@ -2,37 +2,50 @@ import { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import EstimateForm from '../components/EstimateForm';
 import EstimatePreview from '../components/EstimatePreview';
-import { EstimateFormData } from '../types/estimate';
+import { EstimateFormData, ClientType, CONTRACTOR_DISCOUNT_RATE } from '../types/estimate';
 import { calculateEstimate } from '../utils/calculate';
 import estimatesApi from '../api/estimates';
 
 const today = new Date().toISOString().split('T')[0];
 
-const defaultForm: EstimateFormData = {
-  customerName: '',
-  projectName: '',
-  pyeongsu: 30,
-  region: 'main',
-  serviceType: 'package',
-  singleItems: {
-    floorPlan: true,
-    ceilingPlan: false,
-    design3d: false,
-  },
-  meetingType: 'remote',
-  brandingPlus: false,
-  additionalItems: [],
-  discount: 0,
-  estimateDate: today,
-};
+function makeDefaultForm(clientType: ClientType): EstimateFormData {
+  return {
+    customerName: '',
+    projectName: '',
+    pyeongsu: 30,
+    region: 'main',
+    serviceType: 'package',
+    singleItems: {
+      floorPlan: true,
+      ceilingPlan: false,
+      design3d: false,
+    },
+    meetingType: 'remote',
+    brandingPlus: false,
+    additionalItems: [],
+    discount: 0,
+    estimateDate: today,
+    clientType,
+  };
+}
 
-export default function EstimatePage() {
-  const [form, setForm] = useState<EstimateFormData>(defaultForm);
+interface Props {
+  clientType: ClientType;
+}
+
+export default function EstimatePage({ clientType }: Props) {
+  const [form, setForm] = useState<EstimateFormData>(() => makeDefaultForm(clientType));
   const [savedId, setSavedId] = useState<number | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
   const result = useMemo(() => calculateEstimate(form), [form]);
+
+  // 페이지 전환 시 (clientType 변경) 폼 초기화
+  useEffect(() => {
+    setForm(makeDefaultForm(clientType));
+    setSavedId(null);
+  }, [clientType]);
 
   // 견적 이력에서 "불러오기" 시 location.state.loadId 로 전달
   useEffect(() => {
@@ -55,9 +68,17 @@ export default function EstimatePage() {
   }, [location.state, location.pathname, navigate]);
 
   const handleNew = () => {
-    setForm(defaultForm);
+    setForm(makeDefaultForm(clientType));
     setSavedId(null);
   };
+
+  const isContractor = form.clientType === 'contractor';
+  const pageTitle = isContractor ? '시공사 견적서 자동 생성' : '견적서 자동 생성';
+  const subTitle = isContractor
+    ? `좌측에서 항목을 입력하면 우측에서 실시간으로 견적서를 확인할 수 있습니다. (모든 기본가 ${Math.round(
+        CONTRACTOR_DISCOUNT_RATE * 100,
+      )}% 할인 자동 적용 · 출장비 제외)`
+    : '좌측에서 항목을 입력하면 우측에서 실시간으로 견적서를 확인할 수 있습니다.';
 
   return (
     <div className="h-full flex flex-col">
@@ -65,17 +86,20 @@ export default function EstimatePage() {
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-gray-800">
-              견적서 자동 생성
+            <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+              {pageTitle}
+              {isContractor && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
+                  시공사 전용
+                </span>
+              )}
               {savedId !== null && (
                 <span className="ml-2 text-xs font-normal text-primary-600">
                   (저장된 견적 #{savedId} 편집 중)
                 </span>
               )}
             </h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              좌측에서 항목을 입력하면 우측에서 실시간으로 견적서를 확인할 수 있습니다.
-            </p>
+            <p className="text-xs text-gray-400 mt-0.5">{subTitle}</p>
           </div>
           <div className="flex items-center gap-3">
             {savedId !== null && (

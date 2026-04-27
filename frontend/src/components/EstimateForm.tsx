@@ -116,7 +116,9 @@ export default function EstimateForm({ form, onChange, subtotal, savedId, onSave
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `컨빌디자인_견적서_${form.customerName || '고객'}_${form.estimateDate}.${ext}`;
+      const docLabel = form.clientType === 'contractor' ? '시공사견적서' : '견적서';
+      const fallbackName = form.clientType === 'contractor' ? '시공사' : '고객';
+      a.download = `컨빌디자인_${docLabel}_${form.customerName || fallbackName}_${form.estimateDate}.${ext}`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -137,11 +139,11 @@ export default function EstimateForm({ form, onChange, subtotal, savedId, onSave
         <h3 className="section-title">기본 정보</h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="form-label">고객명</label>
+            <label className="form-label">{form.clientType === 'contractor' ? '시공사명' : '고객명'}</label>
             <input
               type="text"
               className="form-input"
-              placeholder="홍길동"
+              placeholder={form.clientType === 'contractor' ? '○○건설' : '홍길동'}
               value={form.customerName}
               onChange={(e) => update({ customerName: e.target.value })}
             />

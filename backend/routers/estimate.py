@@ -24,7 +24,9 @@ async def generate_excel_endpoint(req: EstimateRequest):
     result = calculate(req)
     file_bytes = generate_excel(req, result)
 
-    filename = f"컨빌디자인_견적서_{req.customerName or '고객'}_{req.estimateDate}.xlsx"
+    doc_label = "시공사견적서" if req.clientType == "contractor" else "견적서"
+    fallback = "시공사" if req.clientType == "contractor" else "고객"
+    filename = f"컨빌디자인_{doc_label}_{req.customerName or fallback}_{req.estimateDate}.xlsx"
     from urllib.parse import quote
     encoded_name = quote(filename)
 
@@ -42,7 +44,9 @@ async def generate_pdf_endpoint(req: EstimateRequest):
     result = calculate(req)
     file_bytes = generate_pdf(req, result)
 
-    filename = f"컨빌디자인_견적서_{req.customerName or '고객'}_{req.estimateDate}.pdf"
+    doc_label = "시공사견적서" if req.clientType == "contractor" else "견적서"
+    fallback = "시공사" if req.clientType == "contractor" else "고객"
+    filename = f"컨빌디자인_{doc_label}_{req.customerName or fallback}_{req.estimateDate}.pdf"
     from urllib.parse import quote
     encoded_name = quote(filename)
 
@@ -65,25 +69,29 @@ async def calculate_endpoint(req: EstimateRequest):
 # ─────────── 저장된 견적 CRUD ───────────
 
 def _to_detail(row: SavedEstimate) -> SavedEstimateDetail:
+    form = EstimateRequest(**row.form_data)
     return SavedEstimateDetail(
         id=row.id,
         customerName=row.customer_name or "",
         projectName=row.project_name or "",
         estimateDate=row.estimate_date or "",
         finalAmount=row.final_amount or 0,
+        clientType=form.clientType,
         createdAt=row.created_at.isoformat() if row.created_at else "",
         updatedAt=row.updated_at.isoformat() if row.updated_at else "",
-        form=EstimateRequest(**row.form_data),
+        form=form,
     )
 
 
 def _to_list_item(row: SavedEstimate) -> SavedEstimateListItem:
+    client_type = (row.form_data or {}).get("clientType", "customer")
     return SavedEstimateListItem(
         id=row.id,
         customerName=row.customer_name or "",
         projectName=row.project_name or "",
         estimateDate=row.estimate_date or "",
         finalAmount=row.final_amount or 0,
+        clientType=client_type,
         createdAt=row.created_at.isoformat() if row.created_at else "",
         updatedAt=row.updated_at.isoformat() if row.updated_at else "",
     )

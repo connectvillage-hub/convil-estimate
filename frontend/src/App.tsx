@@ -12,7 +12,8 @@ function App() {
         <main className="flex-1 overflow-auto">
           <Routes>
             <Route path="/" element={<Navigate to="/estimate" replace />} />
-            <Route path="/estimate" element={<EstimatePage />} />
+            <Route path="/estimate" element={<EstimatePage clientType="customer" />} />
+            <Route path="/contractor-estimate" element={<EstimatePage clientType="contractor" />} />
             <Route path="/estimates" element={<EstimateHistoryPage />} />
             <Route path="/materials" element={<MaterialsPage />} />
           </Routes>

@@ -1,4 +1,4 @@
-import { EstimateFormData, EstimateResult, ItemDetail } from '../types/estimate';
+import { EstimateFormData, EstimateResult, ItemDetail, CONTRACTOR_DISCOUNT_RATE } from '../types/estimate';
 
 // 평수 구간 판별
 export function getPyeongRange(pyeong: number): string {
@@ -65,40 +65,47 @@ export function calculateEstimate(form: EstimateFormData): EstimateResult {
   const items: ItemDetail[] = [];
   const pyeongRange = getPyeongRange(form.pyeongsu);
 
+  // 시공사가 기본 할인 (출장비/추가항목 제외)
+  const baseFactor = form.clientType === 'contractor' ? 1 - CONTRACTOR_DISCOUNT_RATE : 1;
+  const apply = (price: number) => Math.round(price * baseFactor);
+
   // 1. 서비스 금액 계산
   if (form.serviceType === 'single') {
     const prices = getSinglePrices(form.pyeongsu);
 
     if (form.singleItems.floorPlan) {
+      const p = apply(prices.floorPlan);
       items.push({
         scope: '단건 의뢰',
         item: `평면도 (${pyeongRange})`,
         quantity: 1,
-        unitCost: prices.floorPlan,
-        cost: prices.floorPlan,
+        unitCost: p,
+        cost: p,
       });
     }
     if (form.singleItems.ceilingPlan) {
+      const p = apply(prices.ceilingPlan);
       items.push({
         scope: '단건 의뢰',
         item: `천장도 (${pyeongRange})`,
         quantity: 1,
-        unitCost: prices.ceilingPlan,
-        cost: prices.ceilingPlan,
+        unitCost: p,
+        cost: p,
       });
     }
     if (form.singleItems.design3d) {
+      const p = apply(prices.design3d);
       items.push({
         scope: '단건 의뢰',
         item: `3D 시안 (${pyeongRange})`,
         quantity: 1,
-        unitCost: prices.design3d,
-        cost: prices.design3d,
+        unitCost: p,
+        cost: p,
       });
     }
   } else {
     // 패키지
-    const price = getPackagePrice(form.pyeongsu);
+    const price = apply(getPackagePrice(form.pyeongsu));
     items.push({
       scope: '패키지',
       item: `평면도 + 천장도 + 3D 시안 + 마감재리스트 (${pyeongRange})`,
@@ -108,7 +115,7 @@ export function calculateEstimate(form: EstimateFormData): EstimateResult {
     });
   }
 
-  // 2. 출장/실측비
+  // 2. 출장/실측비 (할인 미적용)
   if (form.meetingType === 'visit') {
     const visitFee = form.region === 'main' ? 250000 : 340000;
     const regionLabel = form.region === 'main' ? '서울/인천/대전/경남' : '그 외 지역';
@@ -123,12 +130,13 @@ export function calculateEstimate(form: EstimateFormData): EstimateResult {
 
   // 3. 브랜딩 플러스
   if (form.brandingPlus) {
+    const p = apply(2000000);
     items.push({
       scope: '브랜딩 플러스',
       item: '브랜딩 패키지',
       quantity: 1,
-      unitCost: 2000000,
-      cost: 2000000,
+      unitCost: p,
+      cost: p,
     });
   }
 

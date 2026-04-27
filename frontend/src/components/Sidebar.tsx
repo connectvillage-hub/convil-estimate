@@ -12,6 +12,16 @@ const menuItems = [
     ),
   },
   {
+    path: '/contractor-estimate',
+    label: '시공사 견적서',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M3 21h18M3 7l9-4 9 4M5 21V11m14 10V11M9 21v-6h6v6" />
+      </svg>
+    ),
+  },
+  {
     path: '/estimates',
     label: '견적 이력',
     icon: (

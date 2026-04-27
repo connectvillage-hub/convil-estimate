@@ -1,4 +1,4 @@
-from models.estimate import EstimateRequest, EstimateResult, ItemDetail
+from models.estimate import EstimateRequest, EstimateResult, ItemDetail, CONTRACTOR_DISCOUNT_RATE
 
 # 단건 단가표
 SINGLE_PRICES = {
@@ -58,33 +58,40 @@ def calculate(req: EstimateRequest) -> EstimateResult:
     items = []
     pyeong_range = get_pyeong_range(req.pyeongsu)
 
+    # 시공사가 기본 할인 (출장비/추가항목 제외)
+    base_factor = (1 - CONTRACTOR_DISCOUNT_RATE) if req.clientType == 'contractor' else 1
+    apply = lambda price: round(price * base_factor)
+
     # 1. 서비스 금액
     if req.serviceType == 'single':
         prices = SINGLE_PRICES.get(pyeong_range, SINGLE_PRICES['50평대'])
         if req.singleItems.floorPlan:
+            p = apply(prices['floorPlan'])
             items.append(ItemDetail(
                 scope='단건 의뢰', item=f'평면도 ({pyeong_range})',
-                quantity=1, unitCost=prices['floorPlan'], cost=prices['floorPlan']
+                quantity=1, unitCost=p, cost=p
             ))
         if req.singleItems.ceilingPlan:
+            p = apply(prices['ceilingPlan'])
             items.append(ItemDetail(
                 scope='단건 의뢰', item=f'천장도 ({pyeong_range})',
-                quantity=1, unitCost=prices['ceilingPlan'], cost=prices['ceilingPlan']
+                quantity=1, unitCost=p, cost=p
             ))
         if req.singleItems.design3d:
+            p = apply(prices['design3d'])
             items.append(ItemDetail(
                 scope='단건 의뢰', item=f'3D 시안 ({pyeong_range})',
-                quantity=1, unitCost=prices['design3d'], cost=prices['design3d']
+                quantity=1, unitCost=p, cost=p
             ))
     else:
-        price = get_package_price(req.pyeongsu)
+        price = apply(get_package_price(req.pyeongsu))
         items.append(ItemDetail(
             scope='패키지',
             item=f'평면도 + 천장도 + 3D 시안 + 마감재리스트 ({pyeong_range})',
             quantity=1, unitCost=price, cost=price
         ))
 
-    # 2. 출장비
+    # 2. 출장비 (할인 미적용)
     if req.meetingType == 'visit':
         visit_fee = 250000 if req.region == 'main' else 340000
         region_label = '서울/인천/대전/경남' if req.region == 'main' else '그 외 지역'
@@ -95,9 +102,10 @@ def calculate(req: EstimateRequest) -> EstimateResult:
 
     # 3. 브랜딩 플러스
     if req.brandingPlus:
+        p = apply(2000000)
         items.append(ItemDetail(
             scope='브랜딩 플러스', item='브랜딩 패키지',
-            quantity=1, unitCost=2000000, cost=2000000
+            quantity=1, unitCost=p, cost=p
         ))
 
     # 4. 추가 항목

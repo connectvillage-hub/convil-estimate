@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import estimatesApi, { SavedEstimateListItem } from '../api/estimates';
+import { ClientType } from '../types/estimate';
 import { formatCurrency } from '../utils/calculate';
+
+type Filter = 'all' | ClientType;
 
 function formatDateTime(iso: string): string {
   if (!iso) return '—';
@@ -23,7 +26,13 @@ export default function EstimateHistoryPage() {
   const [items, setItems] = useState<SavedEstimateListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Filter>('all');
   const navigate = useNavigate();
+
+  const filtered = useMemo(
+    () => (filter === 'all' ? items : items.filter((it) => it.clientType === filter)),
+    [items, filter],
+  );
 
   const load = async () => {
     setLoading(true);
@@ -43,8 +52,9 @@ export default function EstimateHistoryPage() {
     load();
   }, []);
 
-  const handleLoad = (id: number) => {
-    navigate('/estimate', { state: { loadId: id } });
+  const handleLoad = (id: number, clientType: ClientType) => {
+    const path = clientType === 'contractor' ? '/contractor-estimate' : '/estimate';
+    navigate(path, { state: { loadId: id } });
   };
 
   const handleDelete = async (id: number) => {
@@ -69,12 +79,33 @@ export default function EstimateHistoryPage() {
               지금까지 저장한 견적을 불러오거나 삭제할 수 있습니다.
             </p>
           </div>
-          <button
-            onClick={load}
-            className="text-xs text-gray-500 hover:text-gray-700 underline"
-          >
-            새로고침
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+              {([
+                { key: 'all', label: '전체' },
+                { key: 'customer', label: '고객' },
+                { key: 'contractor', label: '시공사' },
+              ] as { key: Filter; label: string }[]).map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setFilter(opt.key)}
+                  className={`px-3 py-1.5 transition-colors ${
+                    filter === opt.key
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={load}
+              className="text-xs text-gray-500 hover:text-gray-700 underline"
+            >
+              새로고침
+            </button>
+          </div>
         </div>
       </div>
 
@@ -84,9 +115,11 @@ export default function EstimateHistoryPage() {
           <div className="text-center text-gray-400 py-10">불러오는 중...</div>
         ) : error ? (
           <div className="text-center text-red-500 py-10">{error}</div>
-        ) : items.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center text-gray-400 py-10">
-            저장된 견적이 없습니다. 견적서 생성 페이지에서 견적을 저장해보세요.
+            {items.length === 0
+              ? '저장된 견적이 없습니다. 견적서 생성 페이지에서 견적을 저장해보세요.'
+              : '해당 구분에 해당하는 견적이 없습니다.'}
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -94,7 +127,8 @@ export default function EstimateHistoryPage() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
                   <th className="px-4 py-3 w-16">#</th>
-                  <th className="px-4 py-3">고객명</th>
+                  <th className="px-4 py-3 w-20">구분</th>
+                  <th className="px-4 py-3">고객/시공사명</th>
                   <th className="px-4 py-3">프로젝트명</th>
                   <th className="px-4 py-3 w-32">견적일자</th>
                   <th className="px-4 py-3 text-right w-40">최종 금액</th>
@@ -103,9 +137,20 @@ export default function EstimateHistoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {items.map((it) => (
+                {filtered.map((it) => (
                   <tr key={it.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-400">{it.id}</td>
+                    <td className="px-4 py-3">
+                      {it.clientType === 'contractor' ? (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
+                          시공사
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
+                          고객
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-medium">{it.customerName || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{it.projectName || '—'}</td>
                     <td className="px-4 py-3 text-gray-500">{it.estimateDate || '—'}</td>
@@ -118,7 +163,7 @@ export default function EstimateHistoryPage() {
                     <td className="px-4 py-3">
                       <div className="flex justify-center gap-2">
                         <button
-                          onClick={() => handleLoad(it.id)}
+                          onClick={() => handleLoad(it.id, it.clientType)}
                           className="text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-1 rounded transition-colors font-medium"
                         >
                           불러오기

@@ -1,6 +1,9 @@
 export type Region = 'main' | 'other';
 export type ServiceType = 'single' | 'package';
 export type MeetingType = 'remote' | 'visit';
+export type ClientType = 'customer' | 'contractor';
+
+export const CONTRACTOR_DISCOUNT_RATE = 0.15;
 
 export interface SingleItems {
   floorPlan: boolean;
@@ -27,7 +30,13 @@ export interface EstimateFormData {
   additionalItems: AdditionalItem[];
   discount: number;
   estimateDate: string;
+  clientType: ClientType;
 }
+
+export const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
+  customer: '고객',
+  contractor: '시공사',
+};
 
 export interface ItemDetail {
   scope: string;

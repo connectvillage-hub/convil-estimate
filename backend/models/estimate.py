@@ -18,6 +18,14 @@ class MeetingType(str, Enum):
     visit = "visit"
 
 
+class ClientType(str, Enum):
+    customer = "customer"
+    contractor = "contractor"
+
+
+CONTRACTOR_DISCOUNT_RATE = 0.15
+
+
 class SingleItems(BaseModel):
     floorPlan: bool = False
     ceilingPlan: bool = False
@@ -43,6 +51,7 @@ class EstimateRequest(BaseModel):
     additionalItems: List[AdditionalItem] = []
     discount: float = 0
     estimateDate: str = ""
+    clientType: ClientType = ClientType.customer
 
 
 class ItemDetail(BaseModel):
@@ -73,6 +82,7 @@ class SavedEstimateListItem(BaseModel):
     projectName: str
     estimateDate: str
     finalAmount: float
+    clientType: ClientType
     createdAt: str
     updatedAt: str
 
@@ -83,6 +93,7 @@ class SavedEstimateDetail(BaseModel):
     projectName: str
     estimateDate: str
     finalAmount: float
+    clientType: ClientType
     createdAt: str
     updatedAt: str
     form: EstimateRequest
