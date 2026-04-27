@@ -137,13 +137,20 @@ def generate_pdf(req: EstimateRequest, result: EstimateResult) -> bytes:
     cell_r = ParagraphStyle('cr', fontName=font, fontSize=8.5, textColor=GRAY_DARK, alignment=2, leading=12)
     cell_c = ParagraphStyle('cc', fontName=font, fontSize=8.5, textColor=GRAY_DARK, alignment=1, leading=12)
 
+    cell_unavail = ParagraphStyle('cu', fontName=font, fontSize=8.5, textColor=GRAY_MID, alignment=2, leading=12)
     for i, item in enumerate(result.itemDetails):
+        if item.unavailable:
+            unit_cell = Paragraph('<i>데이터 없음</i>', cell_unavail)
+            cost_cell = Paragraph('<i>—</i>', cell_unavail)
+        else:
+            unit_cell = Paragraph(_fmt(item.unitCost), cell_r)
+            cost_cell = Paragraph(_fmt(item.cost), cell_r)
         items_data.append([
             Paragraph(item.scope, cell_l),
             Paragraph(item.item, cell_l),
             Paragraph(str(item.quantity), cell_c),
-            Paragraph(_fmt(item.unitCost), cell_r),
-            Paragraph(_fmt(item.cost), cell_r),
+            unit_cell,
+            cost_cell,
         ])
 
     # 빈 행 채우기 (최소 10행 확보)

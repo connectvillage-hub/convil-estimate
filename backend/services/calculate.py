@@ -64,25 +64,27 @@ def calculate(req: EstimateRequest) -> EstimateResult:
 
     # 1. 서비스 금액
     if req.serviceType == 'single':
-        prices = SINGLE_PRICES.get(pyeong_range, SINGLE_PRICES['50평대'])
+        prices = SINGLE_PRICES.get(pyeong_range)  # 60평 이상은 단가표 미제공 → None
+
+        def push_single(item_name: str, key: str):
+            if prices is None:
+                items.append(ItemDetail(
+                    scope='단건 의뢰', item=item_name,
+                    quantity=1, unitCost=0, cost=0, unavailable=True
+                ))
+                return
+            p = apply(prices[key])
+            items.append(ItemDetail(
+                scope='단건 의뢰', item=item_name,
+                quantity=1, unitCost=p, cost=p
+            ))
+
         if req.singleItems.floorPlan:
-            p = apply(prices['floorPlan'])
-            items.append(ItemDetail(
-                scope='단건 의뢰', item=f'평면도 ({pyeong_range})',
-                quantity=1, unitCost=p, cost=p
-            ))
+            push_single(f'평면도 ({pyeong_range})', 'floorPlan')
         if req.singleItems.ceilingPlan:
-            p = apply(prices['ceilingPlan'])
-            items.append(ItemDetail(
-                scope='단건 의뢰', item=f'천장도 ({pyeong_range})',
-                quantity=1, unitCost=p, cost=p
-            ))
+            push_single(f'천장도 ({pyeong_range})', 'ceilingPlan')
         if req.singleItems.design3d:
-            p = apply(prices['design3d'])
-            items.append(ItemDetail(
-                scope='단건 의뢰', item=f'3D 시안 ({pyeong_range})',
-                quantity=1, unitCost=p, cost=p
-            ))
+            push_single(f'3D 시안 ({pyeong_range})', 'design3d')
     else:
         price = apply(get_package_price(req.pyeongsu))
         items.append(ItemDetail(

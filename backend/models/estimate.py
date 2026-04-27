@@ -60,6 +60,7 @@ class ItemDetail(BaseModel):
     quantity: int
     unitCost: float
     cost: float
+    unavailable: Optional[bool] = False
 
 
 class EstimateResult(BaseModel):

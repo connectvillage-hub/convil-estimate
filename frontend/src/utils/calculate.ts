@@ -55,10 +55,12 @@ export function getPackagePrice(pyeong: number): number {
   return BASE_90 + decades * 800000;
 }
 
+// 단건 단가표가 정의된 최대 평수
+export const SINGLE_PRICE_MAX_PYEONG = 60;
+
 function getSinglePrices(pyeong: number) {
   const range = getPyeongRange(pyeong);
-  // 60평 이상은 50평대 단가 적용 (단건 단가표 미제공)
-  return SINGLE_PRICES[range] ?? SINGLE_PRICES['50평대'];
+  return SINGLE_PRICES[range] ?? null;
 }
 
 export function calculateEstimate(form: EstimateFormData): EstimateResult {
@@ -73,36 +75,31 @@ export function calculateEstimate(form: EstimateFormData): EstimateResult {
   if (form.serviceType === 'single') {
     const prices = getSinglePrices(form.pyeongsu);
 
-    if (form.singleItems.floorPlan) {
-      const p = apply(prices.floorPlan);
+    const pushSingle = (item: string, basePrice: number | undefined) => {
+      if (prices == null || basePrice == null) {
+        items.push({
+          scope: '단건 의뢰',
+          item,
+          quantity: 1,
+          unitCost: 0,
+          cost: 0,
+          unavailable: true,
+        });
+        return;
+      }
+      const p = apply(basePrice);
       items.push({
         scope: '단건 의뢰',
-        item: `평면도 (${pyeongRange})`,
+        item,
         quantity: 1,
         unitCost: p,
         cost: p,
       });
-    }
-    if (form.singleItems.ceilingPlan) {
-      const p = apply(prices.ceilingPlan);
-      items.push({
-        scope: '단건 의뢰',
-        item: `천장도 (${pyeongRange})`,
-        quantity: 1,
-        unitCost: p,
-        cost: p,
-      });
-    }
-    if (form.singleItems.design3d) {
-      const p = apply(prices.design3d);
-      items.push({
-        scope: '단건 의뢰',
-        item: `3D 시안 (${pyeongRange})`,
-        quantity: 1,
-        unitCost: p,
-        cost: p,
-      });
-    }
+    };
+
+    if (form.singleItems.floorPlan) pushSingle(`평면도 (${pyeongRange})`, prices?.floorPlan);
+    if (form.singleItems.ceilingPlan) pushSingle(`천장도 (${pyeongRange})`, prices?.ceilingPlan);
+    if (form.singleItems.design3d) pushSingle(`3D 시안 (${pyeongRange})`, prices?.design3d);
   } else {
     // 패키지
     const price = apply(getPackagePrice(form.pyeongsu));

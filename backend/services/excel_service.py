@@ -63,10 +63,14 @@ def _fill_template(ws, req: EstimateRequest, result: EstimateResult):
         ws[f'B{row}'] = item.scope
         ws[f'C{row}'] = item.item
         ws[f'D{row}'] = item.quantity
-        ws[f'E{row}'].value = item.unitCost
-        ws[f'E{row}'].number_format = '#,##0'
-        ws[f'F{row}'].value = item.cost
-        ws[f'F{row}'].number_format = '#,##0'
+        if item.unavailable:
+            ws[f'E{row}'].value = '데이터 없음'
+            ws[f'F{row}'].value = '—'
+        else:
+            ws[f'E{row}'].value = item.unitCost
+            ws[f'E{row}'].number_format = '#,##0'
+            ws[f'F{row}'].value = item.cost
+            ws[f'F{row}'].number_format = '#,##0'
 
     # 합계
     ws['F30'].value = result.subtotal
@@ -198,10 +202,16 @@ def _create_from_scratch(ws, req: EstimateRequest, result: EstimateResult):
             ws[f'B{row}'].value = item.scope
             ws[f'C{row}'].value = item.item
             ws[f'D{row}'].value = item.quantity
-            ws[f'E{row}'].value = item.unitCost
-            ws[f'E{row}'].number_format = '#,##0'
-            ws[f'F{row}'].value = item.cost
-            ws[f'F{row}'].number_format = '#,##0'
+            if item.unavailable:
+                ws[f'E{row}'].value = '데이터 없음'
+                ws[f'E{row}'].font = Font(name='Malgun Gothic', size=9, italic=True, color='999999')
+                ws[f'F{row}'].value = '—'
+                ws[f'F{row}'].font = Font(name='Malgun Gothic', size=9, italic=True, color='999999')
+            else:
+                ws[f'E{row}'].value = item.unitCost
+                ws[f'E{row}'].number_format = '#,##0'
+                ws[f'F{row}'].value = item.cost
+                ws[f'F{row}'].number_format = '#,##0'
 
     # ── 합계 영역 Row 30~33 ──
     summary_items = [

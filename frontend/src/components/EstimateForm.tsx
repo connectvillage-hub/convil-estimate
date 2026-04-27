@@ -247,6 +247,11 @@ export default function EstimateForm({ form, onChange, subtotal, savedId, onSave
                 </label>
               ))}
             </div>
+            {form.pyeongsu >= 60 && (
+              <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                ⚠ 60평 이상 단건 단가는 등록되어 있지 않아 견적서에 <b>'데이터 없음'</b> 으로 표시됩니다.
+              </p>
+            )}
           </div>
         )}
 

@@ -44,6 +44,7 @@ export interface ItemDetail {
   quantity: number;
   unitCost: number;
   cost: number;
+  unavailable?: boolean;
 }
 
 export interface EstimateResult {

@@ -92,10 +92,18 @@ export default function EstimatePreview({ form, result }: Props) {
                   <div className="col-span-5 text-gray-800 font-medium leading-snug">{item.item}</div>
                   <div className="col-span-1 text-center text-gray-600">{item.quantity}</div>
                   <div className="col-span-2 text-right text-gray-600">
-                    {formatCurrency(item.unitCost)}
+                    {item.unavailable ? (
+                      <span className="italic text-gray-400">데이터 없음</span>
+                    ) : (
+                      formatCurrency(item.unitCost)
+                    )}
                   </div>
                   <div className="col-span-1 text-right font-medium text-gray-800">
-                    {formatCurrency(item.cost)}
+                    {item.unavailable ? (
+                      <span className="italic text-gray-400">—</span>
+                    ) : (
+                      formatCurrency(item.cost)
+                    )}
                   </div>
                 </div>
               ))}
