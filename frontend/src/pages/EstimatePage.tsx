@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import EstimateForm from '../components/EstimateForm';
 import EstimatePreview from '../components/EstimatePreview';
 import { EstimateFormData } from '../types/estimate';
 import { calculateEstimate } from '../utils/calculate';
+import estimatesApi from '../api/estimates';
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -26,8 +28,36 @@ const defaultForm: EstimateFormData = {
 
 export default function EstimatePage() {
   const [form, setForm] = useState<EstimateFormData>(defaultForm);
+  const [savedId, setSavedId] = useState<number | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const result = useMemo(() => calculateEstimate(form), [form]);
+
+  // 견적 이력에서 "불러오기" 시 location.state.loadId 로 전달
+  useEffect(() => {
+    const state = location.state as { loadId?: number } | null;
+    if (state?.loadId) {
+      estimatesApi
+        .get(state.loadId)
+        .then((detail) => {
+          setForm(detail.form);
+          setSavedId(detail.id);
+        })
+        .catch((err) => {
+          console.error(err);
+          alert('견적 불러오기에 실패했습니다.');
+        })
+        .finally(() => {
+          navigate(location.pathname, { replace: true, state: null });
+        });
+    }
+  }, [location.state, location.pathname, navigate]);
+
+  const handleNew = () => {
+    setForm(defaultForm);
+    setSavedId(null);
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -35,14 +65,31 @@ export default function EstimatePage() {
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-gray-800">견적서 자동 생성</h1>
+            <h1 className="text-lg font-bold text-gray-800">
+              견적서 자동 생성
+              {savedId !== null && (
+                <span className="ml-2 text-xs font-normal text-primary-600">
+                  (저장된 견적 #{savedId} 편집 중)
+                </span>
+              )}
+            </h1>
             <p className="text-xs text-gray-400 mt-0.5">
               좌측에서 항목을 입력하면 우측에서 실시간으로 견적서를 확인할 수 있습니다.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-            <span className="text-xs text-gray-400">실시간 계산 중</span>
+          <div className="flex items-center gap-3">
+            {savedId !== null && (
+              <button
+                onClick={handleNew}
+                className="text-xs text-gray-500 hover:text-gray-700 underline"
+              >
+                새 견적 시작
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+              <span className="text-xs text-gray-400">실시간 계산 중</span>
+            </div>
           </div>
         </div>
       </div>
@@ -53,7 +100,13 @@ export default function EstimatePage() {
           {/* 좌측: 입력 폼 */}
           <div className="w-[420px] flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50">
             <div className="p-4">
-              <EstimateForm form={form} onChange={setForm} />
+              <EstimateForm
+                form={form}
+                onChange={setForm}
+                subtotal={result.subtotal}
+                savedId={savedId}
+                onSaved={(id) => setSavedId(id)}
+              />
             </div>
           </div>
 

@@ -8,6 +8,7 @@ from routers.materials import router as materials_router
 # ORM 모델 임포트 (테이블 생성용)
 import models.material  # noqa: F401
 import models.project  # noqa: F401
+import models.saved_estimate  # noqa: F401
 
 # DB 테이블 생성
 Base.metadata.create_all(bind=engine)

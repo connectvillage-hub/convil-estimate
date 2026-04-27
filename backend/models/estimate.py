@@ -61,3 +61,28 @@ class EstimateResult(BaseModel):
     vat: float
     finalAmount: float
     pyeongRange: str
+
+
+class SavedEstimateCreate(BaseModel):
+    form: EstimateRequest
+
+
+class SavedEstimateListItem(BaseModel):
+    id: int
+    customerName: str
+    projectName: str
+    estimateDate: str
+    finalAmount: float
+    createdAt: str
+    updatedAt: str
+
+
+class SavedEstimateDetail(BaseModel):
+    id: int
+    customerName: str
+    projectName: str
+    estimateDate: str
+    finalAmount: float
+    createdAt: str
+    updatedAt: str
+    form: EstimateRequest

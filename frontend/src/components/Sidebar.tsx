@@ -12,6 +12,16 @@ const menuItems = [
     ),
   },
   {
+    path: '/estimates',
+    label: '견적 이력',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
     path: '/materials',
     label: '자재 데이터베이스',
     icon: (
@@ -64,7 +74,6 @@ export default function Sidebar() {
             예정 기능
           </p>
           {[
-            { label: '견적 이력', icon: '📋' },
             { label: '고객 관리', icon: '👥' },
             { label: '설정', icon: '⚙️' },
           ].map((item) => (

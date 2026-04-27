@@ -8,10 +8,14 @@ import {
   MeetingType,
 } from '../types/estimate';
 import { getPyeongRange, formatCurrency } from '../utils/calculate';
+import estimatesApi from '../api/estimates';
 
 interface Props {
   form: EstimateFormData;
   onChange: (form: EstimateFormData) => void;
+  subtotal: number;
+  savedId: number | null;
+  onSaved: (id: number) => void;
 }
 
 let itemIdCounter = 1;
@@ -19,8 +23,44 @@ function newId() {
   return `item-${itemIdCounter++}`;
 }
 
-export default function EstimateForm({ form, onChange }: Props) {
+export default function EstimateForm({ form, onChange, subtotal, savedId, onSaved }: Props) {
   const [downloading, setDownloading] = useState<'excel' | 'pdf' | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // 할인 % (소수 1자리). subtotal 이 0 이면 0 으로 표시.
+  const discountPercent =
+    subtotal > 0 ? Math.round(((form.discount || 0) / subtotal) * 1000) / 10 : 0;
+
+  const handleDiscountAmountChange = (amount: number) => {
+    const safe = Math.max(0, Math.min(amount, subtotal || amount));
+    onChange({ ...form, discount: safe });
+  };
+
+  const handleDiscountPercentChange = (pct: number) => {
+    const clamped = Math.max(0, Math.min(100, isFinite(pct) ? pct : 0));
+    const amount = Math.round((subtotal * clamped) / 100);
+    onChange({ ...form, discount: amount });
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (savedId !== null) {
+        const updated = await estimatesApi.update(savedId, form);
+        onSaved(updated.id);
+        alert('견적이 업데이트되었습니다.');
+      } else {
+        const created = await estimatesApi.create(form);
+        onSaved(created.id);
+        alert(`견적이 저장되었습니다. (#${created.id})`);
+      }
+    } catch (err) {
+      console.error('Save error:', err);
+      alert('견적 저장 중 오류가 발생했습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const update = (patch: Partial<EstimateFormData>) => {
     onChange({ ...form, ...patch });
@@ -342,26 +382,77 @@ export default function EstimateForm({ form, onChange }: Props) {
         )}
       </div>
 
-      {/* ── 할인 금액 ── */}
+      {/* ── 할인 ── */}
       <div className="section-card">
         <h3 className="section-title">할인</h3>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₩</span>
-          <input
-            type="number"
-            className="form-input pl-7"
-            min={0}
-            step={10000}
-            placeholder="0"
-            value={form.discount || ''}
-            onChange={(e) => update({ discount: Number(e.target.value) })}
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="form-label">할인율 (%)</label>
+            <div className="relative">
+              <input
+                type="number"
+                className="form-input pr-8"
+                min={0}
+                max={100}
+                step={1}
+                placeholder="0"
+                value={discountPercent || ''}
+                onChange={(e) => handleDiscountPercentChange(Number(e.target.value))}
+                disabled={subtotal <= 0}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+            </div>
+          </div>
+          <div>
+            <label className="form-label">할인 금액</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₩</span>
+              <input
+                type="number"
+                className="form-input pl-7"
+                min={0}
+                step={10000}
+                placeholder="0"
+                value={form.discount || ''}
+                onChange={(e) => handleDiscountAmountChange(Number(e.target.value))}
+              />
+            </div>
+          </div>
         </div>
+        {subtotal > 0 && form.discount > 0 && (
+          <p className="mt-2 text-xs text-gray-500">
+            합계 ₩{formatCurrency(subtotal)} 중 ₩{formatCurrency(form.discount)} ({discountPercent}%) 할인
+          </p>
+        )}
       </div>
 
-      {/* ── 다운로드 버튼 ── */}
+      {/* ── 저장 / 다운로드 버튼 ── */}
       <div className="section-card bg-gray-50">
-        <h3 className="section-title">견적서 출력</h3>
+        <h3 className="section-title">견적서 저장 및 출력</h3>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="btn-primary w-full justify-center mb-3"
+        >
+          {saving ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              저장 중...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M5 13l4 4L19 7" />
+              </svg>
+              {savedId !== null ? '견적 업데이트' : '견적 저장'}
+            </>
+          )}
+        </button>
         <div className="flex gap-3">
           <button
             type="button"
