@@ -16,9 +16,9 @@ export default function EstimatePreview({ form, result }: Props) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden text-sm">
       {/* ── 헤더 ── */}
-      <div className="bg-[#2E75B6] px-6 py-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-white font-bold text-xl tracking-wide flex items-center gap-2">
+      <div className="bg-[#2E75B6] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-white font-bold text-lg sm:text-xl tracking-wide flex items-center gap-2">
             견 적 서
             {form.clientType === 'contractor' && (
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-300 text-amber-900 tracking-normal">
@@ -26,19 +26,19 @@ export default function EstimatePreview({ form, result }: Props) {
               </span>
             )}
           </h2>
-          <p className="text-blue-200 text-xs mt-0.5">ESTIMATE / QUOTATION</p>
+          <p className="text-blue-200 text-[10px] sm:text-xs mt-0.5">ESTIMATE / QUOTATION</p>
         </div>
-        <div className="text-right text-white">
-          <div className="font-bold text-lg">컨빌디자인</div>
-          <div className="text-blue-200 text-xs">www.convil.net</div>
-          <div className="text-blue-200 text-xs">대표자 박진하 (인)</div>
+        <div className="text-right text-white flex-shrink-0">
+          <div className="font-bold text-sm sm:text-lg">컨빌디자인</div>
+          <div className="text-blue-200 text-[10px] sm:text-xs">www.convil.net</div>
+          <div className="text-blue-200 text-[10px] sm:text-xs">대표자 박진하 (인)</div>
         </div>
       </div>
 
-      <div className="px-6 py-4 space-y-4">
+      <div className="px-3 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
 
         {/* ── 기본 정보 행 ── */}
-        <div className="flex justify-between items-start pb-3 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 pb-3 border-b border-gray-100">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400 w-20">견적일자</span>
@@ -53,7 +53,7 @@ export default function EstimatePreview({ form, result }: Props) {
               <span className="text-sm font-medium">{form.projectName || '—'}</span>
             </div>
           </div>
-          <div className="text-right space-y-1">
+          <div className="sm:text-right space-y-1">
             <div className="text-xs text-gray-400">평수 / 구간</div>
             <div className="text-sm font-medium">{form.pyeongsu}평 ({result.pyeongRange})</div>
             <div className="text-xs text-gray-400">
@@ -66,12 +66,12 @@ export default function EstimatePreview({ form, result }: Props) {
         {/* ── 항목 테이블 ── */}
         <div>
           {/* 테이블 헤더 */}
-          <div className="grid grid-cols-12 gap-1 text-xs font-semibold text-white bg-[#2E75B6] rounded-t-lg px-3 py-2">
+          <div className="grid grid-cols-12 gap-1 text-[10px] sm:text-xs font-semibold text-white bg-[#2E75B6] rounded-t-lg px-2 sm:px-3 py-2">
             <div className="col-span-3">Scope</div>
-            <div className="col-span-5">Item</div>
+            <div className="col-span-4 sm:col-span-5">Item</div>
             <div className="col-span-1 text-center">QTY</div>
-            <div className="col-span-2 text-right">Unit Cost</div>
-            <div className="col-span-1 text-right">Cost</div>
+            <div className="col-span-2 text-right">Unit</div>
+            <div className="col-span-2 sm:col-span-1 text-right">Cost</div>
           </div>
 
           {/* 항목 행 */}
@@ -84,21 +84,21 @@ export default function EstimatePreview({ form, result }: Props) {
               {result.itemDetails.map((item, idx) => (
                 <div
                   key={idx}
-                  className={`grid grid-cols-12 gap-1 px-3 py-2 text-xs ${
+                  className={`grid grid-cols-12 gap-1 px-2 sm:px-3 py-2 text-[11px] sm:text-xs ${
                     idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
                   }`}
                 >
-                  <div className="col-span-3 text-gray-500">{item.scope}</div>
-                  <div className="col-span-5 text-gray-800 font-medium leading-snug">{item.item}</div>
+                  <div className="col-span-3 text-gray-500 break-keep">{item.scope}</div>
+                  <div className="col-span-4 sm:col-span-5 text-gray-800 font-medium leading-snug break-keep">{item.item}</div>
                   <div className="col-span-1 text-center text-gray-600">{item.quantity}</div>
-                  <div className="col-span-2 text-right text-gray-600">
+                  <div className="col-span-2 text-right text-gray-600 truncate">
                     {item.unavailable ? (
                       <span className="italic text-gray-400">데이터 없음</span>
                     ) : (
                       formatCurrency(item.unitCost)
                     )}
                   </div>
-                  <div className="col-span-1 text-right font-medium text-gray-800">
+                  <div className="col-span-2 sm:col-span-1 text-right font-medium text-gray-800 truncate">
                     {item.unavailable ? (
                       <span className="italic text-gray-400">—</span>
                     ) : (

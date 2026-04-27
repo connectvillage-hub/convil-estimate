@@ -83,25 +83,25 @@ export default function EstimatePage({ clientType }: Props) {
   return (
     <div className="h-full flex flex-col">
       {/* 페이지 헤더 */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              {pageTitle}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-gray-800 flex flex-wrap items-center gap-2">
+              <span>{pageTitle}</span>
               {isContractor && (
                 <span className="text-xs font-medium px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
                   시공사 전용
                 </span>
               )}
               {savedId !== null && (
-                <span className="ml-2 text-xs font-normal text-primary-600">
+                <span className="text-xs font-normal text-primary-600">
                   (저장된 견적 #{savedId} 편집 중)
                 </span>
               )}
             </h1>
-            <p className="text-xs text-gray-400 mt-0.5">{subTitle}</p>
+            <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">{subTitle}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             {savedId !== null && (
               <button
                 onClick={handleNew}
@@ -110,7 +110,7 @@ export default function EstimatePage({ clientType }: Props) {
                 새 견적 시작
               </button>
             )}
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
               <span className="text-xs text-gray-400">실시간 계산 중</span>
             </div>
@@ -118,12 +118,12 @@ export default function EstimatePage({ clientType }: Props) {
         </div>
       </div>
 
-      {/* 메인 콘텐츠 */}
+      {/* 메인 콘텐츠 — lg 이상에서 좌우 분할, 그 미만에서 세로 스택 */}
       <div className="flex-1 overflow-auto">
-        <div className="flex h-full">
-          {/* 좌측: 입력 폼 */}
-          <div className="w-[420px] flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50">
-            <div className="p-4">
+        <div className="flex flex-col lg:flex-row lg:h-full">
+          {/* 입력 폼 */}
+          <div className="w-full lg:w-[420px] lg:flex-shrink-0 lg:overflow-y-auto lg:border-r border-b lg:border-b-0 border-gray-200 bg-gray-50">
+            <div className="p-3 sm:p-4">
               <EstimateForm
                 form={form}
                 onChange={setForm}
@@ -134,8 +134,8 @@ export default function EstimatePage({ clientType }: Props) {
             </div>
           </div>
 
-          {/* 우측: 미리보기 */}
-          <div className="flex-1 overflow-y-auto bg-gray-100 p-6">
+          {/* 미리보기 */}
+          <div className="flex-1 lg:overflow-y-auto bg-gray-100 p-3 sm:p-6">
             <div className="max-w-2xl mx-auto">
               <div className="mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
