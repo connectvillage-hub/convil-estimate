@@ -41,13 +41,21 @@ export interface PaymentInput {
   memo: string;
 }
 
+export interface InitialPaymentInput {
+  amount: number;
+  method: PaymentMethod;
+  paidAt?: string;
+}
+
 export interface ContractInput {
   title: string;
   contractAmount: number;
   contractDate: string;
   estimateId?: number | null;
   state: ContractState;
+  taxInvoiceIssued: boolean;
   memo: string;
+  initialPayment?: InitialPaymentInput | null;
 }
 
 export interface ContractDetail {
@@ -58,6 +66,7 @@ export interface ContractDetail {
   contractAmount: number;
   contractDate: string;
   state: ContractState;
+  taxInvoiceIssued: boolean;
   memo: string;
   paidAmount: number;
   remainingAmount: number;
@@ -71,6 +80,7 @@ export const emptyContract = (): ContractInput => ({
   contractAmount: 0,
   contractDate: new Date().toISOString().split('T')[0],
   state: 'active',
+  taxInvoiceIssued: false,
   memo: '',
 });
 

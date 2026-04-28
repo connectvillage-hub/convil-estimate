@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, Float, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -39,6 +39,7 @@ class Contract(Base):
     contract_amount = Column(Float, nullable=False, default=0)
     contract_date = Column(String(20), nullable=False, default="")
     state = Column(String(30), nullable=False, default="active")
+    tax_invoice_issued = Column(Boolean, nullable=False, default=False)
     memo = Column(Text, nullable=False, default="")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

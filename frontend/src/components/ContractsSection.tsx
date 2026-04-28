@@ -177,82 +177,97 @@ export default function ContractsSection({ customerId }: Props) {
       ) : (
         <div className="space-y-3">
           {contracts.map((c) => {
-            const progress = c.contractAmount > 0 ? (c.paidAmount / c.contractAmount) * 100 : 0;
+            const isFullyPaid = c.remainingAmount <= 0 && c.contractAmount > 0;
+            // 결제 수단 요약 (중복 제거)
+            const methodsUsed = Array.from(new Set(c.payments.map((p) => p.method)));
+            const methodsLabel = methodsUsed.length === 0
+              ? '미입금'
+              : methodsUsed.map((m) => PAYMENT_METHOD_LABELS[m]).join(', ');
+
             return (
-              <div key={c.id} className="border border-gray-200 rounded-lg p-3 sm:p-4">
-                {/* 계약 헤더 */}
-                <div className="flex items-start justify-between gap-2 mb-2">
+              <div key={c.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                {/* 헤더: 제목 + 금액 + 상태 */}
+                <div className="px-3 sm:px-4 py-3 flex items-start justify-between gap-2 bg-gray-50 border-b border-gray-200">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="text-xs font-bold text-gray-500">#{c.id}</span>
                       <span
                         className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${CONTRACT_STATE_COLORS[c.state]}`}
                       >
-                        {CONTRACT_STATE_LABELS[c.state]}
+                        {isFullyPaid && c.state === 'completed' ? '✅ 완료' : CONTRACT_STATE_LABELS[c.state]}
                       </span>
                       <span className="text-xs text-gray-400">{formatDate(c.contractDate)}</span>
                     </div>
-                    {c.title && (
-                      <div className="text-sm font-medium text-gray-800 mt-1">{c.title}</div>
-                    )}
+                    <div className="text-sm font-semibold text-gray-800 truncate">
+                      {c.title || '(제목 없음)'}
+                    </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="text-sm font-bold text-primary-700">{fmt(c.contractAmount)}</div>
+                    <div className="text-base font-bold text-primary-700">{fmt(c.contractAmount)}</div>
                   </div>
                 </div>
 
-                {/* 진행 바 */}
-                <div className="mb-2">
-                  <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                    <span>
-                      입금: <span className="text-green-700 font-semibold">{fmt(c.paidAmount)}</span>
+                {/* 정보 라인: 결제수단 · 세금계산서 */}
+                <div className="px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 text-xs border-b border-gray-100">
+                  <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                    💳 {methodsLabel}
+                  </span>
+                  {c.taxInvoiceIssued ? (
+                    <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded">
+                      📋 세금계산서 발행됨
                     </span>
-                    <span>
-                      미수: <span className="text-amber-700 font-semibold">{fmt(c.remainingAmount)}</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded">
+                      📋 세금계산서 미발행
                     </span>
-                  </div>
-                  <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-green-500 transition-all"
-                      style={{ width: `${Math.min(100, progress)}%` }}
-                    />
-                  </div>
+                  )}
                 </div>
 
-                {/* 입금 내역 */}
+                {/* 입금 진행 (미수금 있는 경우만) */}
+                {c.contractAmount > 0 && !isFullyPaid && (
+                  <div className="px-3 sm:px-4 py-2 border-b border-gray-100">
+                    <div className="flex justify-between text-[11px] mb-1">
+                      <span className="text-gray-600">
+                        입금 <span className="text-green-700 font-semibold">{fmt(c.paidAmount)}</span>
+                      </span>
+                      <span className="text-gray-600">
+                        잔금 <span className="text-amber-700 font-semibold">{fmt(c.remainingAmount)}</span>
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-500 transition-all"
+                        style={{ width: `${Math.min(100, (c.paidAmount / c.contractAmount) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 입금 내역 (있을 때만, 컴팩트하게) */}
                 {c.payments.length > 0 && (
-                  <div className="mt-3 space-y-1.5">
+                  <div className="px-3 sm:px-4 py-2 space-y-1 border-b border-gray-100 bg-gray-50/50">
                     {c.payments.map((p) => (
                       <div
                         key={p.id}
-                        className="flex items-center justify-between bg-gray-50 rounded px-3 py-2 text-xs"
+                        className="flex items-center justify-between text-[11px] gap-2"
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[10px] font-semibold text-gray-500">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <span className="font-semibold text-gray-600 flex-shrink-0">
                             {PAYMENT_METHOD_LABELS[p.method]}
                           </span>
-                          <span className="text-gray-400">·</span>
-                          <span className="text-gray-500">{formatDateTime(p.paidAt)}</span>
-                          {p.memo && (
-                            <>
-                              <span className="text-gray-400 hidden sm:inline">·</span>
-                              <span className="text-gray-500 truncate hidden sm:inline">{p.memo}</span>
-                            </>
-                          )}
+                          <span className="text-gray-400 truncate">{formatDateTime(p.paidAt)}</span>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="font-semibold text-gray-800">{fmt(p.amount)}</span>
+                        <span className="font-semibold text-gray-700 flex-shrink-0">{fmt(p.amount)}</span>
+                        <div className="flex gap-1 flex-shrink-0">
                           <button
                             onClick={() => openPaymentModal(c, p)}
                             className="text-gray-400 hover:text-primary-600 text-[10px]"
-                            title="수정"
                           >
                             편집
                           </button>
                           <button
                             onClick={() => handleDeletePayment(c, p)}
                             className="text-gray-400 hover:text-red-600 text-[10px]"
-                            title="삭제"
                           >
                             삭제
                           </button>
@@ -262,15 +277,24 @@ export default function ContractsSection({ customerId }: Props) {
                   </div>
                 )}
 
+                {/* 메모 (있을 때만) */}
+                {c.memo && (
+                  <div className="px-3 sm:px-4 py-2 text-[11px] text-gray-500 whitespace-pre-wrap border-b border-gray-100">
+                    {c.memo}
+                  </div>
+                )}
+
                 {/* 액션 */}
-                <div className="mt-3 pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
-                  <button
-                    onClick={() => openPaymentModal(c, null)}
-                    className="text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-1 rounded font-medium"
-                  >
-                    + 입금 추가
-                  </button>
-                  <div className="flex items-center gap-1">
+                <div className="px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2 bg-white">
+                  {!isFullyPaid && (
+                    <button
+                      onClick={() => openPaymentModal(c, null)}
+                      className="text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-1 rounded font-medium"
+                    >
+                      + 잔금 입금
+                    </button>
+                  )}
+                  <div className="flex items-center gap-1 ml-auto">
                     <button
                       onClick={() => {
                         setEditingContract(c);
@@ -278,22 +302,16 @@ export default function ContractsSection({ customerId }: Props) {
                       }}
                       className="text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
                     >
-                      계약 수정
+                      수정
                     </button>
                     <button
                       onClick={() => handleDeleteContract(c)}
                       className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded"
                     >
-                      계약 삭제
+                      삭제
                     </button>
                   </div>
                 </div>
-
-                {c.memo && (
-                  <p className="mt-2 text-[11px] text-gray-500 whitespace-pre-wrap bg-gray-50 rounded p-2">
-                    {c.memo}
-                  </p>
-                )}
               </div>
             );
           })}

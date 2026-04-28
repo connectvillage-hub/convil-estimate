@@ -23,11 +23,22 @@ def _migrate_schema():
     """기존 테이블에 누락된 컬럼 추가 (멱등). create_all 은 새 컬럼 추가 안 함."""
     from sqlalchemy import inspect, text
     inspector = inspect(engine)
+
     if "saved_estimates" in inspector.get_table_names():
         cols = [c["name"] for c in inspector.get_columns("saved_estimates")]
         if "customer_id" not in cols:
             with engine.connect() as conn:
                 conn.execute(text("ALTER TABLE saved_estimates ADD COLUMN customer_id INTEGER"))
+                conn.commit()
+
+    if "contracts" in inspector.get_table_names():
+        cols = [c["name"] for c in inspector.get_columns("contracts")]
+        if "tax_invoice_issued" not in cols:
+            with engine.connect() as conn:
+                # PostgreSQL/SQLite 둘 다 BOOLEAN 지원
+                conn.execute(text(
+                    "ALTER TABLE contracts ADD COLUMN tax_invoice_issued BOOLEAN NOT NULL DEFAULT FALSE"
+                ))
                 conn.commit()
 
 

@@ -39,6 +39,7 @@ def _contract_to_detail(c: Contract) -> ContractDetail:
         contractAmount=c.contract_amount or 0,
         contractDate=c.contract_date or "",
         state=c.state or "active",
+        taxInvoiceIssued=bool(c.tax_invoice_issued),
         memo=c.memo or "",
         paidAmount=paid,
         remainingAmount=max(0, (c.contract_amount or 0) - paid),
@@ -90,9 +91,23 @@ async def create_contract(
         contract_amount=payload.contractAmount,
         contract_date=payload.contractDate,
         state=payload.state,
+        tax_invoice_issued=payload.taxInvoiceIssued,
         memo=payload.memo,
     )
     db.add(row)
+    db.flush()
+
+    # 계약 생성과 동시에 입금 한 건 등록 (옵션)
+    if payload.initialPayment and payload.initialPayment.amount > 0:
+        _validate_method(payload.initialPayment.method)
+        payment = Payment(
+            contract_id=row.id,
+            amount=payload.initialPayment.amount,
+            paid_at=payload.initialPayment.paidAt or datetime.utcnow(),
+            method=payload.initialPayment.method,
+        )
+        db.add(payment)
+
     db.commit()
     db.refresh(row)
     return _contract_to_detail(row)
@@ -156,6 +171,7 @@ async def update_contract(
     row.contract_amount = payload.contractAmount
     row.contract_date = payload.contractDate
     row.state = payload.state
+    row.tax_invoice_issued = payload.taxInvoiceIssued
     row.memo = payload.memo
     db.commit()
     db.refresh(row)
