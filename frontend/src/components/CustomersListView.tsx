@@ -39,7 +39,36 @@ export default function CustomersListView() {
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [statusPopoverId, setStatusPopoverId] = useState<number | null>(null);
   const navigate = useNavigate();
+
+  // 외부 클릭 시 popover 닫기
+  useEffect(() => {
+    if (statusPopoverId === null) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-status-popover]')) {
+        setStatusPopoverId(null);
+      }
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [statusPopoverId]);
+
+  const handleChangeStatus = async (customerId: number, newStatus: ContractStatus) => {
+    setStatusPopoverId(null);
+    // 낙관적 업데이트
+    setItems((prev) =>
+      prev.map((c) => (c.id === customerId ? { ...c, contractStatus: newStatus } : c)),
+    );
+    try {
+      await customersApi.updateContractStatus(customerId, newStatus);
+    } catch (err) {
+      console.error(err);
+      alert('상태 변경 중 오류가 발생했습니다.');
+      load(); // 실패 시 서버 상태로 되돌림
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -255,11 +284,42 @@ export default function CustomersListView() {
                         {c.phone || c.email || '연락처 없음'}
                       </div>
                     </div>
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 ${CONTRACT_STATUS_COLORS[c.contractStatus]}`}
-                    >
-                      {CONTRACT_STATUS_LABELS[c.contractStatus]}
-                    </span>
+                    <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        data-status-popover
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStatusPopoverId(statusPopoverId === c.id ? null : c.id);
+                        }}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${CONTRACT_STATUS_COLORS[c.contractStatus]}`}
+                      >
+                        {CONTRACT_STATUS_LABELS[c.contractStatus]} ▾
+                      </button>
+                      {statusPopoverId === c.id && (
+                        <div
+                          data-status-popover
+                          className="absolute right-0 z-20 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px]"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {CONTRACT_STATUS_OPTIONS.map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => handleChangeStatus(c.id, s)}
+                              className={`w-full text-left text-xs px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2 ${
+                                s === c.contractStatus ? 'bg-primary-50 font-semibold' : ''
+                              }`}
+                            >
+                              <span
+                                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${CONTRACT_STATUS_COLORS[s]}`}
+                              >
+                                {CONTRACT_STATUS_LABELS[s]}
+                              </span>
+                              {s === c.contractStatus && <span className="text-primary-600 ml-auto">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   {c.contractCount > 0 && (
                     <div className="grid grid-cols-3 gap-1 mt-2 pt-2 border-t border-gray-100 text-[10px]">
@@ -403,12 +463,42 @@ export default function CustomersListView() {
                         <td className="px-4 py-3 text-gray-600 text-xs">
                           {INQUIRY_SOURCE_LABELS[c.inquirySource]}
                         </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${CONTRACT_STATUS_COLORS[c.contractStatus]}`}
+                        <td className="px-4 py-3 relative" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            data-status-popover
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setStatusPopoverId(statusPopoverId === c.id ? null : c.id);
+                            }}
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded border hover:ring-2 hover:ring-primary-200 transition-all ${CONTRACT_STATUS_COLORS[c.contractStatus]}`}
+                            title="클릭해서 변경"
                           >
-                            {CONTRACT_STATUS_LABELS[c.contractStatus]}
-                          </span>
+                            {CONTRACT_STATUS_LABELS[c.contractStatus]} ▾
+                          </button>
+                          {statusPopoverId === c.id && (
+                            <div
+                              data-status-popover
+                              className="absolute z-20 mt-1 left-4 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {CONTRACT_STATUS_OPTIONS.map((s) => (
+                                <button
+                                  key={s}
+                                  onClick={() => handleChangeStatus(c.id, s)}
+                                  className={`w-full text-left text-xs px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2 ${
+                                    s === c.contractStatus ? 'bg-primary-50 font-semibold' : ''
+                                  }`}
+                                >
+                                  <span
+                                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${CONTRACT_STATUS_COLORS[s]}`}
+                                  >
+                                    {CONTRACT_STATUS_LABELS[s]}
+                                  </span>
+                                  {s === c.contractStatus && <span className="text-primary-600 ml-auto">✓</span>}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center text-gray-600">{c.contactCount}</td>
                         <td className="px-4 py-3 text-xs text-gray-400 hidden lg:table-cell">

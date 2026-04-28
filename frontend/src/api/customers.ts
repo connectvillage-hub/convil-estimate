@@ -38,6 +38,14 @@ const customersApi = {
     return data;
   },
 
+  async updateContractStatus(id: number, status: ContractStatus): Promise<CustomerDetail> {
+    const { data } = await axios.patch(
+      `${getApiBase()}/api/customers/${id}/contract-status`,
+      { contractStatus: status },
+    );
+    return data;
+  },
+
   async delete(id: number): Promise<void> {
     await axios.delete(`${getApiBase()}/api/customers/${id}`);
   },

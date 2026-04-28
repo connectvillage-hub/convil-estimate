@@ -218,6 +218,26 @@ async def delete_customer(customer_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
+class ContractStatusPatch(BaseModel):
+    contractStatus: str
+
+
+@router.patch("/{customer_id}/contract-status", response_model=CustomerDetail)
+async def patch_contract_status(
+    customer_id: int, payload: ContractStatusPatch, db: Session = Depends(get_db)
+):
+    """계약 상태만 빠르게 변경 (목록 페이지에서 인라인 변경용)."""
+    if payload.contractStatus not in CONTRACT_STATUSES:
+        raise HTTPException(status_code=400, detail=f"잘못된 계약 상태: {payload.contractStatus}")
+    row = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="고객을 찾을 수 없습니다")
+    row.contract_status = payload.contractStatus
+    db.commit()
+    db.refresh(row)
+    return _customer_to_detail(row)
+
+
 class BulkDeletePayload(BaseModel):
     ids: List[int] = Field(default_factory=list)
 
