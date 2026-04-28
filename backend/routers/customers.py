@@ -15,6 +15,7 @@ from models.customer import (
     INQUIRY_SOURCES,
     CONTRACT_STATUSES,
 )
+from models.contract import Contract, Payment
 from models.customer_schemas import (
     ContactInput,
     ContactResponse,
@@ -55,7 +56,12 @@ def _customer_to_detail(c: Customer) -> CustomerDetail:
     )
 
 
-def _customer_to_list_item(c: Customer, contact_count: int) -> CustomerListItem:
+def _customer_to_list_item(
+    c: Customer,
+    contact_count: int,
+    finance: Optional[Dict[str, Any]] = None,
+) -> CustomerListItem:
+    f = finance or {}
     return CustomerListItem(
         id=c.id,
         name=c.name,
@@ -66,6 +72,11 @@ def _customer_to_list_item(c: Customer, contact_count: int) -> CustomerListItem:
         inquirySource=c.inquiry_source or "other",
         contractStatus=c.contract_status or "pre_consultation",
         contactCount=contact_count,
+        contractCount=f.get("contract_count", 0),
+        contractTotal=f.get("contract_total", 0.0),
+        paidTotal=f.get("paid_total", 0.0),
+        outstandingTotal=f.get("outstanding_total", 0.0),
+        taxInvoicePending=f.get("tax_pending", 0),
         createdAt=c.created_at.isoformat() if c.created_at else "",
         updatedAt=c.updated_at.isoformat() if c.updated_at else "",
     )
@@ -130,7 +141,35 @@ async def list_customers(
         .group_by(Contact.customer_id)
         .all()
     )
-    return [_customer_to_list_item(r, counts.get(r.id, 0)) for r in rows]
+
+    # 재무 집계 (모든 계약/입금 일괄 로드 후 customer 별로 묶기)
+    contracts_all = db.query(Contract).all()
+    paid_per_contract = dict(
+        db.query(Payment.contract_id, func.coalesce(func.sum(Payment.amount), 0))
+        .group_by(Payment.contract_id)
+        .all()
+    )
+    finance: Dict[int, Dict[str, Any]] = {}
+    for c in contracts_all:
+        info = finance.setdefault(c.customer_id, {
+            "contract_total": 0.0,
+            "paid_total": 0.0,
+            "outstanding_total": 0.0,
+            "contract_count": 0,
+            "tax_pending": 0,
+        })
+        amount = c.contract_amount or 0
+        paid = paid_per_contract.get(c.id, 0) or 0
+        info["contract_total"] += amount
+        info["paid_total"] += paid
+        info["contract_count"] += 1
+        # 취소된 계약은 미수금/세금계산서 집계 제외
+        if c.state != "cancelled":
+            info["outstanding_total"] += max(0, amount - paid)
+            if not c.tax_invoice_issued:
+                info["tax_pending"] += 1
+
+    return [_customer_to_list_item(r, counts.get(r.id, 0), finance.get(r.id)) for r in rows]
 
 
 @router.get("/{customer_id}", response_model=CustomerDetail)

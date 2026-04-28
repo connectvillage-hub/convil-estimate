@@ -42,6 +42,12 @@ class CustomerListItem(BaseModel):
     inquirySource: str
     contractStatus: str
     contactCount: int
+    # 재무 집계
+    contractCount: int = 0
+    contractTotal: float = 0
+    paidTotal: float = 0
+    outstandingTotal: float = 0
+    taxInvoicePending: int = 0  # 미발행 세금계산서 수
     createdAt: str
     updatedAt: str
 

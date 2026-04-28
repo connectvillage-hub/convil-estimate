@@ -96,6 +96,12 @@ export interface CustomerListItem {
   inquirySource: InquirySource;
   contractStatus: ContractStatus;
   contactCount: number;
+  // 재무 집계
+  contractCount: number;
+  contractTotal: number;
+  paidTotal: number;
+  outstandingTotal: number;
+  taxInvoicePending: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -261,6 +261,33 @@ export default function CustomersListView() {
                       {CONTRACT_STATUS_LABELS[c.contractStatus]}
                     </span>
                   </div>
+                  {c.contractCount > 0 && (
+                    <div className="grid grid-cols-3 gap-1 mt-2 pt-2 border-t border-gray-100 text-[10px]">
+                      <div className="text-center">
+                        <div className="text-gray-400">계약</div>
+                        <div className="font-semibold text-gray-800">
+                          ₩{c.contractTotal.toLocaleString('ko-KR')}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-gray-400">입금</div>
+                        <div className="font-semibold text-green-700">
+                          ₩{c.paidTotal.toLocaleString('ko-KR')}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-gray-400">미수</div>
+                        <div className={`font-semibold ${c.outstandingTotal > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+                          ₩{c.outstandingTotal.toLocaleString('ko-KR')}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {c.taxInvoicePending > 0 && (
+                    <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-2 text-center">
+                      📋 세금계산서 미발행 {c.taxInvoicePending}건
+                    </div>
+                  )}
                   {c.memo && (
                     <div className="text-[11px] text-gray-600 mt-2 pt-2 border-t border-gray-100 line-clamp-3 whitespace-pre-wrap">
                       {c.memo}
@@ -293,6 +320,7 @@ export default function CustomersListView() {
                       <th className="px-4 py-3 w-16">#</th>
                       <th className="px-4 py-3 w-36">이름 / 회사</th>
                       <th className="px-4 py-3 w-44">연락처</th>
+                      <th className="px-4 py-3 w-44">계약 / 입금 / 미수</th>
                       <th className="px-4 py-3 hidden xl:table-cell">메모</th>
                       <th className="px-4 py-3 w-28">문의 경로</th>
                       <th className="px-4 py-3 w-28">계약 상태</th>
@@ -331,6 +359,37 @@ export default function CustomersListView() {
                         <td className="px-4 py-3 text-gray-600 text-xs">
                           <div>{c.phone || '—'}</div>
                           <div className="text-gray-400">{c.email}</div>
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          {c.contractCount === 0 ? (
+                            <span className="text-gray-300">계약 없음</span>
+                          ) : (
+                            <div className="space-y-0.5">
+                              <div className="flex justify-between gap-2">
+                                <span className="text-gray-500">계약</span>
+                                <span className="font-semibold text-gray-800">
+                                  ₩{c.contractTotal.toLocaleString('ko-KR')}
+                                </span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span className="text-gray-500">입금</span>
+                                <span className="font-semibold text-green-700">
+                                  ₩{c.paidTotal.toLocaleString('ko-KR')}
+                                </span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span className="text-gray-500">미수</span>
+                                <span className={`font-semibold ${c.outstandingTotal > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+                                  ₩{c.outstandingTotal.toLocaleString('ko-KR')}
+                                </span>
+                              </div>
+                              {c.taxInvoicePending > 0 && (
+                                <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 inline-block mt-0.5">
+                                  📋 세금계산서 미발행 {c.taxInvoicePending}건
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-gray-600 text-xs hidden xl:table-cell max-w-md">
                           {c.memo ? (
