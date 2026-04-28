@@ -290,14 +290,15 @@ async def intake_from_webhook(
         email=payload.email,
         address=payload.address,
         manager=payload.manager,
-        memo="",
+        # 폼 문의 요약을 기본 정보 메모에도 저장
+        memo=payload.memo or "",
         inquiry_source=src,
         contract_status="pre_consultation",
     )
     db.add(customer)
     db.flush()
 
-    # 1차 컨택 자동 기록 (정리된 memo 만 사용 — rawData 는 디버깅용으로만 받고 저장 안 함)
+    # 1차 컨택 기록도 함께 생성 (이력/타임라인 용)
     if payload.memo:
         contact = Contact(
             customer_id=customer.id,
