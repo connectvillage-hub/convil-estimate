@@ -66,7 +66,7 @@ app.include_router(contracts_router)
 app.include_router(dashboard_router)
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
         "service": "컨빌 디자인 견적서 API",
@@ -75,6 +75,7 @@ async def root():
     }
 
 
-@app.get("/health")
+# UptimeRobot 등 외부 모니터링 도구가 HEAD 요청을 보내는 경우가 있어 둘 다 지원
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
     return {"status": "ok"}
