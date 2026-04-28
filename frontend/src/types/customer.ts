@@ -92,6 +92,7 @@ export interface CustomerListItem {
   companyName: string;
   phone: string;
   email: string;
+  memo: string;
   inquirySource: InquirySource;
   contractStatus: ContractStatus;
   contactCount: number;

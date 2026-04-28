@@ -38,6 +38,7 @@ class CustomerListItem(BaseModel):
     companyName: str
     phone: str
     email: str
+    memo: str
     inquirySource: str
     contractStatus: str
     contactCount: int

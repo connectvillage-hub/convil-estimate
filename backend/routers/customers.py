@@ -62,6 +62,7 @@ def _customer_to_list_item(c: Customer, contact_count: int) -> CustomerListItem:
         companyName=c.company_name or "",
         phone=c.phone or "",
         email=c.email or "",
+        memo=c.memo or "",
         inquirySource=c.inquiry_source or "other",
         contractStatus=c.contract_status or "pre_consultation",
         contactCount=contact_count,

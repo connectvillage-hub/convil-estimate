@@ -165,7 +165,12 @@ export default function CustomersListView() {
                       {CONTRACT_STATUS_LABELS[c.contractStatus]}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-gray-400 pt-2 border-t border-gray-100">
+                  {c.memo && (
+                    <div className="text-[11px] text-gray-600 mt-2 pt-2 border-t border-gray-100 line-clamp-3 whitespace-pre-wrap">
+                      {c.memo}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-[10px] text-gray-400 pt-2 border-t border-gray-100 mt-2">
                     <span>📍 {INQUIRY_SOURCE_LABELS[c.inquirySource]}</span>
                     <span>컨택 {c.contactCount}회</span>
                   </div>
@@ -179,12 +184,13 @@ export default function CustomersListView() {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
                       <th className="px-4 py-3 w-16">#</th>
-                      <th className="px-4 py-3">이름 / 회사</th>
-                      <th className="px-4 py-3">연락처</th>
-                      <th className="px-4 py-3 w-32">문의 경로</th>
-                      <th className="px-4 py-3 w-32">계약 상태</th>
-                      <th className="px-4 py-3 text-center w-20">컨택</th>
-                      <th className="px-4 py-3 w-44 hidden lg:table-cell">최종 수정</th>
+                      <th className="px-4 py-3 w-36">이름 / 회사</th>
+                      <th className="px-4 py-3 w-44">연락처</th>
+                      <th className="px-4 py-3 hidden xl:table-cell">메모</th>
+                      <th className="px-4 py-3 w-28">문의 경로</th>
+                      <th className="px-4 py-3 w-28">계약 상태</th>
+                      <th className="px-4 py-3 text-center w-16">컨택</th>
+                      <th className="px-4 py-3 w-40 hidden lg:table-cell">최종 수정</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -204,6 +210,15 @@ export default function CustomersListView() {
                         <td className="px-4 py-3 text-gray-600 text-xs">
                           <div>{c.phone || '—'}</div>
                           <div className="text-gray-400">{c.email}</div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 text-xs hidden xl:table-cell max-w-md">
+                          {c.memo ? (
+                            <div className="line-clamp-3 whitespace-pre-wrap leading-snug">
+                              {c.memo}
+                            </div>
+                          ) : (
+                            <span className="text-gray-300">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-gray-600 text-xs">
                           {INQUIRY_SOURCE_LABELS[c.inquirySource]}
