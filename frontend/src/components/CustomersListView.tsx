@@ -289,7 +289,7 @@ export default function CustomersListView() {
                     </div>
                   )}
                   {c.memo && (
-                    <div className="text-[11px] text-gray-600 mt-2 pt-2 border-t border-gray-100 line-clamp-3 whitespace-pre-wrap">
+                    <div className="text-[11px] text-gray-600 mt-2 pt-2 border-t border-gray-100 whitespace-pre-wrap leading-snug">
                       {c.memo}
                     </div>
                   )}
@@ -321,7 +321,7 @@ export default function CustomersListView() {
                       <th className="px-4 py-3 w-36">이름 / 회사</th>
                       <th className="px-4 py-3 w-44">연락처</th>
                       <th className="px-4 py-3 w-44">계약 / 입금 / 미수</th>
-                      <th className="px-4 py-3 hidden xl:table-cell">메모</th>
+                      <th className="px-4 py-3 hidden lg:table-cell min-w-[220px]">메모</th>
                       <th className="px-4 py-3 w-28">문의 경로</th>
                       <th className="px-4 py-3 w-28">계약 상태</th>
                       <th className="px-4 py-3 text-center w-16">컨택</th>
@@ -391,9 +391,9 @@ export default function CustomersListView() {
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs hidden xl:table-cell max-w-md">
+                        <td className="px-4 py-3 text-gray-600 text-xs hidden lg:table-cell align-top min-w-[220px]">
                           {c.memo ? (
-                            <div className="line-clamp-3 whitespace-pre-wrap leading-snug">
+                            <div className="whitespace-pre-wrap leading-snug break-keep">
                               {c.memo}
                             </div>
                           ) : (
