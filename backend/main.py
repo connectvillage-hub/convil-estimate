@@ -5,12 +5,14 @@ from database import engine, Base
 from routers.estimate import router as estimate_router
 from routers.materials import router as materials_router
 from routers.customers import router as customers_router
+from routers.contracts import router as contracts_router
 
 # ORM 모델 임포트 (테이블 생성용)
 import models.material  # noqa: F401
 import models.project  # noqa: F401
 import models.saved_estimate  # noqa: F401
 import models.customer  # noqa: F401
+import models.contract  # noqa: F401
 
 # DB 테이블 생성
 Base.metadata.create_all(bind=engine)
@@ -44,6 +46,7 @@ app.add_middleware(
 app.include_router(estimate_router)
 app.include_router(materials_router)
 app.include_router(customers_router)
+app.include_router(contracts_router)
 
 
 @app.get("/")

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import customersApi from '../api/customers';
 import CustomerFormModal from '../components/CustomerFormModal';
+import ContractsSection from '../components/ContractsSection';
 import {
   CustomerDetail,
   CustomerInput,
@@ -244,14 +245,8 @@ export default function CustomerDetailPage() {
             )}
           </section>
 
-          {/* 견적/계약/입금 (Phase 2/3에서 채워질 자리) */}
-          <section className="section-card opacity-60">
-            <h2 className="section-title">견적 · 계약 · 입금 정보</h2>
-            <p className="text-sm text-gray-400 text-center py-6">
-              이 섹션은 Phase 2 (계약/결제 관리) 에서 추가됩니다.<br />
-              지금은 견적 이력 페이지에서 별도로 관리해주세요.
-            </p>
-          </section>
+          {/* 계약 / 입금 관리 */}
+          <ContractsSection customerId={customerId} />
         </div>
       </div>
 
