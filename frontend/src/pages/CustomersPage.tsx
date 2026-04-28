@@ -1,256 +1,68 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import customersApi from '../api/customers';
-import CustomerFormModal from '../components/CustomerFormModal';
-import {
-  CustomerListItem,
-  CustomerInput,
-  ContractStatus,
-  InquirySource,
-  CONTRACT_STATUS_LABELS,
-  CONTRACT_STATUS_OPTIONS,
-  CONTRACT_STATUS_COLORS,
-  INQUIRY_SOURCE_LABELS,
-  INQUIRY_SOURCE_OPTIONS,
-} from '../types/customer';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import CustomersListView from '../components/CustomersListView';
+import AllPaymentsView from '../components/AllPaymentsView';
+import OutstandingView from '../components/OutstandingView';
 
-function formatDateTime(iso: string): string {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return iso;
-  }
-}
+type Tab = 'list' | 'payments' | 'outstanding';
+
+const TAB_LABELS: Record<Tab, string> = {
+  list: '👥 고객 목록',
+  payments: '💰 입금 내역',
+  outstanding: '⚠️ 미수금',
+};
 
 export default function CustomersPage() {
-  const [items, setItems] = useState<CustomerListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<ContractStatus | 'all'>('all');
-  const [filterSource, setFilterSource] = useState<InquirySource | 'all'>('all');
-  const [modalOpen, setModalOpen] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>('list');
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await customersApi.list();
-      setItems(data);
-    } catch (err) {
-      console.error(err);
-      setError('고객 목록을 불러오지 못했습니다. 백엔드 서버 상태를 확인해주세요.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 다른 페이지(대시보드 등)에서 location.state.tab 으로 진입한 경우 해당 탭 선택
   useEffect(() => {
-    load();
-  }, []);
-
-  const filtered = useMemo(() => {
-    let list = items;
-    if (filterStatus !== 'all') list = list.filter((c) => c.contractStatus === filterStatus);
-    if (filterSource !== 'all') list = list.filter((c) => c.inquirySource === filterSource);
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          c.companyName.toLowerCase().includes(q) ||
-          c.phone.includes(q) ||
-          c.email.toLowerCase().includes(q),
-      );
+    const state = location.state as { tab?: Tab } | null;
+    if (state?.tab) {
+      setTab(state.tab);
+      navigate(location.pathname, { replace: true, state: null });
     }
-    return list;
-  }, [items, filterStatus, filterSource, search]);
+  }, [location.state, location.pathname, navigate]);
 
-  const handleCreate = async (input: CustomerInput) => {
-    const created = await customersApi.create(input);
-    await load();
-    navigate(`/customers/${created.id}`);
+  const subtitle: Record<Tab, string> = {
+    list: '고객 정보·문의 경로·컨택 이력을 관리합니다.',
+    payments: '모든 고객의 입금 내역을 한곳에서 확인합니다.',
+    outstanding: '입금 받지 못한 계약을 한눈에 봅니다.',
   };
 
   return (
     <div className="h-full flex flex-col">
       {/* 헤더 */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-gray-800">고객 관리</h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              고객 정보·문의 경로·컨택 이력을 관리합니다.
-            </p>
-          </div>
-          <button onClick={() => setModalOpen(true)} className="btn-primary justify-center">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            새 고객 등록
-          </button>
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 pt-3 sm:pt-4 flex-shrink-0">
+        <div className="mb-3">
+          <h1 className="text-base sm:text-lg font-bold text-gray-800">고객 관리</h1>
+          <p className="text-xs text-gray-400 mt-0.5">{subtitle[tab]}</p>
+        </div>
+
+        {/* 탭 */}
+        <div className="flex gap-1 -mb-px overflow-x-auto">
+          {(['list', 'payments', 'outstanding'] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                tab === t
+                  ? 'text-primary-700 border-primary-500'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+              }`}
+            >
+              {TAB_LABELS[t]}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 필터 + 검색 */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex-shrink-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            className="form-input flex-1 min-w-[200px] max-w-md"
-            placeholder="이름·회사명·전화번호·이메일 검색"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            className="form-select w-auto"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as ContractStatus | 'all')}
-          >
-            <option value="all">전체 상태</option>
-            {CONTRACT_STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {CONTRACT_STATUS_LABELS[s]}
-              </option>
-            ))}
-          </select>
-          <select
-            className="form-select w-auto"
-            value={filterSource}
-            onChange={(e) => setFilterSource(e.target.value as InquirySource | 'all')}
-          >
-            <option value="all">전체 경로</option>
-            {INQUIRY_SOURCE_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {INQUIRY_SOURCE_LABELS[s]}
-              </option>
-            ))}
-          </select>
-          <button onClick={load} className="text-xs text-gray-500 hover:text-gray-700 underline ml-auto">
-            새로고침
-          </button>
-        </div>
-      </div>
-
-      {/* 콘텐츠 */}
-      <div className="flex-1 overflow-auto p-3 sm:p-6">
-        {loading ? (
-          <div className="text-center text-gray-400 py-10">불러오는 중...</div>
-        ) : error ? (
-          <div className="text-center text-red-500 py-10">{error}</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center text-gray-400 py-10">
-            {items.length === 0
-              ? '아직 등록된 고객이 없습니다. 우측 상단 "새 고객 등록"을 눌러보세요.'
-              : '조건에 맞는 고객이 없습니다.'}
-          </div>
-        ) : (
-          <>
-            {/* 모바일: 카드 */}
-            <div className="md:hidden space-y-3">
-              {filtered.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => navigate(`/customers/${c.id}`)}
-                  className="w-full text-left bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:border-primary-300 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-sm text-gray-800 truncate">
-                        {c.name}
-                        {c.companyName && (
-                          <span className="text-xs text-gray-400 ml-1">· {c.companyName}</span>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {c.phone || c.email || '연락처 없음'}
-                      </div>
-                    </div>
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 ${CONTRACT_STATUS_COLORS[c.contractStatus]}`}
-                    >
-                      {CONTRACT_STATUS_LABELS[c.contractStatus]}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] text-gray-400 pt-2 border-t border-gray-100">
-                    <span>📍 {INQUIRY_SOURCE_LABELS[c.inquirySource]}</span>
-                    <span>컨택 {c.contactCount}회</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* 태블릿/데스크톱: 테이블 */}
-            <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
-                      <th className="px-4 py-3 w-16">#</th>
-                      <th className="px-4 py-3">이름 / 회사</th>
-                      <th className="px-4 py-3">연락처</th>
-                      <th className="px-4 py-3 w-32">문의 경로</th>
-                      <th className="px-4 py-3 w-32">계약 상태</th>
-                      <th className="px-4 py-3 text-center w-20">컨택</th>
-                      <th className="px-4 py-3 w-44 hidden lg:table-cell">최종 수정</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filtered.map((c) => (
-                      <tr
-                        key={c.id}
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/customers/${c.id}`)}
-                      >
-                        <td className="px-4 py-3 text-gray-400">{c.id}</td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-gray-800">{c.name}</div>
-                          {c.companyName && (
-                            <div className="text-xs text-gray-400">{c.companyName}</div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">
-                          <div>{c.phone || '—'}</div>
-                          <div className="text-gray-400">{c.email}</div>
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">
-                          {INQUIRY_SOURCE_LABELS[c.inquirySource]}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${CONTRACT_STATUS_COLORS[c.contractStatus]}`}
-                          >
-                            {CONTRACT_STATUS_LABELS[c.contractStatus]}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center text-gray-600">{c.contactCount}</td>
-                        <td className="px-4 py-3 text-xs text-gray-400 hidden lg:table-cell">
-                          {formatDateTime(c.updatedAt || c.createdAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      <CustomerFormModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleCreate}
-      />
+      {/* 탭별 콘텐츠 */}
+      {tab === 'list' && <CustomersListView />}
+      {tab === 'payments' && <AllPaymentsView />}
+      {tab === 'outstanding' && <OutstandingView />}
     </div>
   );
 }

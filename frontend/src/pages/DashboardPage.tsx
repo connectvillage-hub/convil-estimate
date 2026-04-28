@@ -211,7 +211,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
                 <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">미수금 TOP</h2>
                 <button
-                  onClick={() => navigate('/payments')}
+                  onClick={() => navigate('/customers', { state: { tab: 'outstanding' } })}
                   className="text-xs text-primary-600 hover:underline"
                 >
                   전체 보기 →
