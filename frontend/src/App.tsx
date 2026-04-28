@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
+import DashboardPage from './pages/DashboardPage';
+import PaymentsPage from './pages/PaymentsPage';
 import EstimatePage from './pages/EstimatePage';
 import EstimateHistoryPage from './pages/EstimateHistoryPage';
 import CustomersPage from './pages/CustomersPage';
@@ -36,7 +38,9 @@ function App() {
           </div>
           <main className="flex-1 overflow-auto">
             <Routes>
-              <Route path="/" element={<Navigate to="/estimate" replace />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/estimate" element={<EstimatePage clientType="customer" />} />
               <Route path="/contractor-estimate" element={<EstimatePage clientType="contractor" />} />
               <Route path="/estimates" element={<EstimateHistoryPage />} />

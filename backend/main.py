@@ -6,6 +6,7 @@ from routers.estimate import router as estimate_router
 from routers.materials import router as materials_router
 from routers.customers import router as customers_router
 from routers.contracts import router as contracts_router
+from routers.dashboard import router as dashboard_router
 
 # ORM 모델 임포트 (테이블 생성용)
 import models.material  # noqa: F401
@@ -47,6 +48,7 @@ app.include_router(estimate_router)
 app.include_router(materials_router)
 app.include_router(customers_router)
 app.include_router(contracts_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/")
