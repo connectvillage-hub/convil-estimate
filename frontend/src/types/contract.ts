@@ -32,6 +32,7 @@ export interface Payment {
   paidAt: string;
   method: PaymentMethod;
   memo: string;
+  handler: string;
 }
 
 export interface PaymentInput {
@@ -39,12 +40,14 @@ export interface PaymentInput {
   paidAt?: string;
   method: PaymentMethod;
   memo: string;
+  handler?: string;
 }
 
 export interface InitialPaymentInput {
   amount: number;
   method: PaymentMethod;
   paidAt?: string;
+  handler?: string;
 }
 
 export interface ContractInput {
@@ -89,4 +92,5 @@ export const emptyPayment = (): PaymentInput => ({
   paidAt: new Date().toISOString().slice(0, 16),
   method: 'bank_transfer',
   memo: '',
+  handler: '',
 });

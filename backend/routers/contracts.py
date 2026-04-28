@@ -25,6 +25,7 @@ def _payment_to_response(p: Payment) -> PaymentResponse:
         paidAt=p.paid_at.isoformat() if p.paid_at else "",
         method=p.method or "bank_transfer",
         memo=p.memo or "",
+        handler=p.handler or "",
     )
 
 
@@ -105,6 +106,7 @@ async def create_contract(
             amount=payload.initialPayment.amount,
             paid_at=payload.initialPayment.paidAt or datetime.utcnow(),
             method=payload.initialPayment.method,
+            handler=payload.initialPayment.handler or "",
         )
         db.add(payment)
 
@@ -204,6 +206,7 @@ async def add_payment(
         paid_at=payload.paidAt or datetime.utcnow(),
         method=payload.method,
         memo=payload.memo,
+        handler=payload.handler or "",
     )
     db.add(payment)
     db.commit()
@@ -228,6 +231,7 @@ async def update_payment(
         payment.paid_at = payload.paidAt
     payment.method = payload.method
     payment.memo = payload.memo
+    payment.handler = payload.handler or ""
     db.commit()
     contract = db.query(Contract).filter(Contract.id == contract_id).first()
     return _contract_to_detail(contract)

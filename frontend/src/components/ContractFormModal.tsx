@@ -10,6 +10,7 @@ import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHOD_OPTIONS,
 } from '../types/contract';
+import HandlerInput from './HandlerInput';
 
 interface Props {
   open: boolean;
@@ -28,6 +29,7 @@ export default function ContractFormModal({ open, initial, onClose, onSubmit }: 
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('unpaid');
   const [partialAmount, setPartialAmount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
+  const [paymentHandler, setPaymentHandler] = useState<string>('');
 
   const isEdit = !!initial;
 
@@ -48,6 +50,7 @@ export default function ContractFormModal({ open, initial, onClose, onSubmit }: 
         setPaymentStatus('unpaid');
         setPartialAmount(0);
         setPaymentMethod('bank_transfer');
+        setPaymentHandler('');
       }
     }
   }, [open, initial]);
@@ -71,6 +74,7 @@ export default function ContractFormModal({ open, initial, onClose, onSubmit }: 
         payload.initialPayment = {
           amount: form.contractAmount,
           method: paymentMethod,
+          handler: paymentHandler.trim(),
         };
         payload.state = 'completed';
       } else if (paymentStatus === 'partial') {
@@ -81,6 +85,7 @@ export default function ContractFormModal({ open, initial, onClose, onSubmit }: 
         payload.initialPayment = {
           amount: partialAmount,
           method: paymentMethod,
+          handler: paymentHandler.trim(),
         };
         payload.state = 'active';
       }
@@ -183,32 +188,43 @@ export default function ContractFormModal({ open, initial, onClose, onSubmit }: 
                 </div>
 
                 {paymentStatus !== 'unpaid' && (
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
-                    {paymentStatus === 'partial' && (
-                      <div>
-                        <label className="form-label">받은 금액 (원)</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          min={0}
-                          step={10000}
-                          value={partialAmount || ''}
-                          onChange={(e) => setPartialAmount(Number(e.target.value))}
-                          placeholder="예: 1,000,000"
-                        />
+                  <div className="space-y-3 pt-2 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-3">
+                      {paymentStatus === 'partial' && (
+                        <div>
+                          <label className="form-label">받은 금액 (원)</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            min={0}
+                            step={10000}
+                            value={partialAmount || ''}
+                            onChange={(e) => setPartialAmount(Number(e.target.value))}
+                            placeholder="예: 1,000,000"
+                          />
+                        </div>
+                      )}
+                      <div className={paymentStatus === 'completed' ? 'col-span-2' : ''}>
+                        <label className="form-label">결제 수단</label>
+                        <select
+                          className="form-select"
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                        >
+                          {PAYMENT_METHOD_OPTIONS.map((m) => (
+                            <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</option>
+                          ))}
+                        </select>
                       </div>
-                    )}
-                    <div className={paymentStatus === 'completed' ? 'col-span-2' : ''}>
-                      <label className="form-label">결제 수단</label>
-                      <select
-                        className="form-select"
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                      >
-                        {PAYMENT_METHOD_OPTIONS.map((m) => (
-                          <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</option>
-                        ))}
-                      </select>
+                    </div>
+                    <div>
+                      <label className="form-label">담당자 (입금 받은 사람)</label>
+                      <HandlerInput
+                        value={paymentHandler}
+                        onChange={setPaymentHandler}
+                        placeholder="예: 이아연"
+                        listId="contract-initial-handler-options"
+                      />
                     </div>
                   </div>
                 )}

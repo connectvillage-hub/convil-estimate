@@ -438,13 +438,18 @@ export default function ContractsSection({ customerId }: Props) {
                     {c.payments.map((p) => (
                       <div
                         key={p.id}
-                        className="flex items-center justify-between text-[11px] gap-2"
+                        className="flex items-center justify-between text-[11px] gap-2 flex-wrap"
                       >
-                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap">
                           <span className="font-semibold text-gray-600 flex-shrink-0">
                             {PAYMENT_METHOD_LABELS[p.method]}
                           </span>
-                          <span className="text-gray-400 truncate">{formatDateTime(p.paidAt)}</span>
+                          <span className="text-gray-400">{formatDateTime(p.paidAt)}</span>
+                          {p.handler && (
+                            <span className="text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                              👤 {p.handler}
+                            </span>
+                          )}
                         </div>
                         <span className="font-semibold text-gray-700 flex-shrink-0">{fmt(p.amount)}</span>
                         <div className="flex gap-1 flex-shrink-0">

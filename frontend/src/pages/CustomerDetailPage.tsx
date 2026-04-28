@@ -4,6 +4,7 @@ import customersApi from '../api/customers';
 import CustomerFormModal from '../components/CustomerFormModal';
 import ContractsSection from '../components/ContractsSection';
 import CustomerEstimatesSection from '../components/CustomerEstimatesSection';
+import HandlerInput, { invalidateHandlerCache } from '../components/HandlerInput';
 import {
   CustomerDetail,
   CustomerInput,
@@ -40,6 +41,7 @@ export default function CustomerDetailPage() {
 
   // 새 컨택 입력
   const [newContent, setNewContent] = useState('');
+  const [newHandler, setNewHandler] = useState('');
   const [addingContact, setAddingContact] = useState(false);
 
   // 견적→계약 변환 후 ContractsSection 강제 리프레시
@@ -88,9 +90,14 @@ export default function CustomerDetailPage() {
     }
     setAddingContact(true);
     try {
-      const updated = await customersApi.addContact(customerId, { content: newContent.trim() });
+      const updated = await customersApi.addContact(customerId, {
+        content: newContent.trim(),
+        handler: newHandler.trim(),
+      });
       setCustomer(updated);
       setNewContent('');
+      setNewHandler('');
+      if (newHandler.trim()) invalidateHandlerCache();
     } catch (err) {
       console.error(err);
       alert('컨택 기록 추가 중 오류가 발생했습니다.');
@@ -204,7 +211,15 @@ export default function CustomerDetailPage() {
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
               />
-              <div className="flex justify-end">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex-1 min-w-[160px]">
+                  <HandlerInput
+                    value={newHandler}
+                    onChange={setNewHandler}
+                    placeholder="컨택 담당자 (예: 이아연)"
+                    listId="contact-handler-options"
+                  />
+                </div>
                 <button
                   onClick={handleAddContact}
                   disabled={addingContact || !newContent.trim()}
@@ -224,14 +239,19 @@ export default function CustomerDetailPage() {
               <div className="space-y-3">
                 {customer.contacts.map((c) => (
                   <div key={c.id} className="border border-gray-200 rounded-lg p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-start justify-between mb-2 flex-wrap gap-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded">
                           {c.sequence}차
                         </span>
                         <span className="text-xs text-gray-400">
                           {formatDateTime(c.contactedAt)}
                         </span>
+                        {c.handler && (
+                          <span className="text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded">
+                            👤 {c.handler}
+                          </span>
+                        )}
                       </div>
                       <button
                         onClick={() => handleDeleteContact(c.id, c.sequence)}

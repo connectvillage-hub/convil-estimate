@@ -59,6 +59,7 @@ export interface PaymentRow {
   paidAt: string;
   method: PaymentMethod;
   memo: string;
+  handler: string;
 }
 
 const dashboardApi = {

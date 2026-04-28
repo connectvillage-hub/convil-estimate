@@ -72,6 +72,7 @@ export interface Contact {
   sequence: number;
   contactedAt: string;
   content: string;
+  handler: string;
 }
 
 export interface CustomerInput {
@@ -117,6 +118,7 @@ export interface ContactInput {
   sequence?: number;
   contactedAt?: string;
   content: string;
+  handler?: string;
 }
 
 export const emptyCustomer = (): CustomerInput => ({

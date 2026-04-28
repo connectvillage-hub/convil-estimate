@@ -9,6 +9,7 @@ class ContactInput(BaseModel):
     sequence: Optional[int] = None  # None 이면 자동으로 다음 차수
     contactedAt: Optional[datetime] = None  # None 이면 현재 시간
     content: str = ""
+    handler: str = ""  # 컨택 담당자
 
 
 class ContactResponse(BaseModel):
@@ -16,6 +17,7 @@ class ContactResponse(BaseModel):
     sequence: int
     contactedAt: str
     content: str
+    handler: str = ""
 
 
 # ── Customer ──

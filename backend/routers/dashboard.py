@@ -10,6 +10,8 @@ from database import get_db
 from models.customer import Customer, Contact
 from models.contract import Contract, Payment
 
+# 담당자 자동완성용 (별도 router 만들기는 과해서 dashboard 모듈 안에 추가)
+
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
@@ -67,6 +69,7 @@ class PaymentRow(BaseModel):
     paidAt: str
     method: str
     memo: str
+    handler: str = ""
 
 
 # ── 헬퍼 ──
@@ -332,6 +335,7 @@ async def list_all_payments(
             paidAt=p.paid_at.isoformat() if p.paid_at else "",
             method=p.method,
             memo=p.memo or "",
+            handler=p.handler or "",
         )
         for p, c, cust in rows
     ]

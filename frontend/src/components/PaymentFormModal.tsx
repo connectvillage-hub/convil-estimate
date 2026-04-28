@@ -7,6 +7,7 @@ import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHOD_OPTIONS,
 } from '../types/contract';
+import HandlerInput from './HandlerInput';
 
 interface Props {
   open: boolean;
@@ -46,6 +47,7 @@ export default function PaymentFormModal({
           paidAt: toLocalDateTimeInput(initial.paidAt),
           method: initial.method,
           memo: initial.memo,
+          handler: initial.handler || '',
         });
       } else {
         setForm({
@@ -155,6 +157,15 @@ export default function PaymentFormModal({
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="form-label">담당자 (입금 받은 사람)</label>
+              <HandlerInput
+                value={form.handler || ''}
+                onChange={(v) => update({ handler: v })}
+                placeholder="예: 이아연"
+                listId="payment-handler-options"
+              />
             </div>
             <div>
               <label className="form-label">메모</label>

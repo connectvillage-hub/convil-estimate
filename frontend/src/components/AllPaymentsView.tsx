@@ -227,6 +227,13 @@ export default function AllPaymentsView() {
                           <span className="font-medium">{PAYMENT_METHOD_LABELS[p.method]}</span>
                           <span>{formatDateTime(p.paidAt)}</span>
                         </div>
+                        {p.handler && (
+                          <div className="text-[10px] mt-1">
+                            <span className="text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded font-medium">
+                              👤 {p.handler}
+                            </span>
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -239,9 +246,10 @@ export default function AllPaymentsView() {
                           <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
                             <th className="px-4 py-2">고객</th>
                             <th className="px-4 py-2">계약</th>
-                            <th className="px-4 py-2 w-32">결제 수단</th>
-                            <th className="px-4 py-2 text-right w-36">금액</th>
-                            <th className="px-4 py-2 w-44">입금 일시</th>
+                            <th className="px-4 py-2 w-28">결제 수단</th>
+                            <th className="px-4 py-2 w-24">담당자</th>
+                            <th className="px-4 py-2 text-right w-32">금액</th>
+                            <th className="px-4 py-2 w-40">입금 일시</th>
                             <th className="px-4 py-2">메모</th>
                           </tr>
                         </thead>
@@ -258,6 +266,15 @@ export default function AllPaymentsView() {
                               </td>
                               <td className="px-4 py-2 text-xs text-gray-600">
                                 {PAYMENT_METHOD_LABELS[p.method]}
+                              </td>
+                              <td className="px-4 py-2 text-xs">
+                                {p.handler ? (
+                                  <span className="font-medium text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
+                                    👤 {p.handler}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-300">—</span>
+                                )}
                               </td>
                               <td className="px-4 py-2 text-right font-semibold text-green-700">
                                 {fmt(p.amount)}

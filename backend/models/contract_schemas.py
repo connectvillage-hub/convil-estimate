@@ -10,6 +10,7 @@ class PaymentInput(BaseModel):
     paidAt: Optional[datetime] = None  # None 이면 현재 시각
     method: str = "bank_transfer"
     memo: str = ""
+    handler: str = ""  # 입금 받은 담당자
 
 
 class PaymentResponse(BaseModel):
@@ -18,6 +19,7 @@ class PaymentResponse(BaseModel):
     paidAt: str
     method: str
     memo: str
+    handler: str = ""
 
 
 # ── Contract ──
@@ -26,6 +28,7 @@ class InitialPaymentInput(BaseModel):
     amount: float = Field(ge=0)
     method: str = "bank_transfer"
     paidAt: Optional[datetime] = None
+    handler: str = ""
 
 
 class ContractInput(BaseModel):

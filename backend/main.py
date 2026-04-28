@@ -7,6 +7,7 @@ from routers.materials import router as materials_router
 from routers.customers import router as customers_router
 from routers.contracts import router as contracts_router
 from routers.dashboard import router as dashboard_router
+from routers.handlers import router as handlers_router
 
 # ORM 모델 임포트 (테이블 생성용)
 import models.material  # noqa: F401
@@ -38,6 +39,24 @@ def _migrate_schema():
                 # PostgreSQL/SQLite 둘 다 BOOLEAN 지원
                 conn.execute(text(
                     "ALTER TABLE contracts ADD COLUMN tax_invoice_issued BOOLEAN NOT NULL DEFAULT FALSE"
+                ))
+                conn.commit()
+
+    if "customer_contacts" in inspector.get_table_names():
+        cols = [c["name"] for c in inspector.get_columns("customer_contacts")]
+        if "handler" not in cols:
+            with engine.connect() as conn:
+                conn.execute(text(
+                    "ALTER TABLE customer_contacts ADD COLUMN handler VARCHAR(100) NOT NULL DEFAULT ''"
+                ))
+                conn.commit()
+
+    if "contract_payments" in inspector.get_table_names():
+        cols = [c["name"] for c in inspector.get_columns("contract_payments")]
+        if "handler" not in cols:
+            with engine.connect() as conn:
+                conn.execute(text(
+                    "ALTER TABLE contract_payments ADD COLUMN handler VARCHAR(100) NOT NULL DEFAULT ''"
                 ))
                 conn.commit()
 
@@ -75,6 +94,7 @@ app.include_router(materials_router)
 app.include_router(customers_router)
 app.include_router(contracts_router)
 app.include_router(dashboard_router)
+app.include_router(handlers_router)
 
 
 @app.api_route("/", methods=["GET", "HEAD"])

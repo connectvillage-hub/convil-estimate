@@ -59,6 +59,7 @@ class Contact(Base):
     sequence = Column(Integer, nullable=False)  # 1차, 2차, 3차...
     contacted_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     content = Column(Text, nullable=False, default="")
+    handler = Column(String(100), nullable=False, default="")  # 컨택 담당자
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     customer = relationship("Customer", back_populates="contacts")

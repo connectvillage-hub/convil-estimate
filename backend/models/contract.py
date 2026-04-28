@@ -66,6 +66,7 @@ class Payment(Base):
     paid_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     method = Column(String(30), nullable=False, default="bank_transfer")
     memo = Column(Text, nullable=False, default="")
+    handler = Column(String(100), nullable=False, default="")  # 입금 받은 담당자
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     contract = relationship("Contract", back_populates="payments")

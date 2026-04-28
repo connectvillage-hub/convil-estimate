@@ -35,6 +35,7 @@ def _contact_to_response(c: Contact) -> ContactResponse:
         sequence=c.sequence,
         contactedAt=c.contacted_at.isoformat() if c.contacted_at else "",
         content=c.content or "",
+        handler=c.handler or "",
     )
 
 
@@ -262,6 +263,7 @@ async def add_contact(
         sequence=sequence,
         contacted_at=payload.contactedAt or datetime.utcnow(),
         content=payload.content,
+        handler=payload.handler or "",
     )
     db.add(contact)
     db.commit()
@@ -288,6 +290,7 @@ async def update_contact(
     if payload.contactedAt is not None:
         contact.contacted_at = payload.contactedAt
     contact.content = payload.content
+    contact.handler = payload.handler or ""
     db.commit()
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     return _customer_to_detail(customer)
