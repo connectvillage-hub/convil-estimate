@@ -36,6 +36,9 @@ export default function CustomersListView() {
   const [filterSource, setFilterSource] = useState<InquirySource | 'all'>('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const navigate = useNavigate();
 
   const load = async () => {
@@ -76,6 +79,50 @@ export default function CustomersListView() {
     navigate(`/customers/${created.id}`);
   };
 
+  const toggleSelect = (id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const allFilteredSelected =
+    filtered.length > 0 && filtered.every((c) => selected.has(c.id));
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((c) => c.id)));
+    }
+  };
+
+  const exitEditMode = () => {
+    setEditMode(false);
+    setSelected(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`선택한 ${selected.size}명의 고객을 삭제하시겠습니까?\n관련된 컨택 이력 · 견적 · 계약 · 입금 내역도 함께 삭제됩니다.`)) {
+      return;
+    }
+    setBulkDeleting(true);
+    try {
+      const result = await customersApi.bulkDelete(Array.from(selected));
+      alert(`${result.deleted}명 삭제 완료`);
+      exitEditMode();
+      await load();
+    } catch (err) {
+      console.error(err);
+      alert('일괄 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   return (
     <>
       {/* 액션 바 */}
@@ -109,19 +156,55 @@ export default function CustomersListView() {
                 <option key={s} value={s}>{INQUIRY_SOURCE_LABELS[s]}</option>
               ))}
             </select>
-            <button onClick={() => setModalOpen(true)} className="btn-primary text-xs px-3 py-1.5">
-              + 새 고객
-            </button>
-            <button
-              onClick={() => setGuideOpen(true)}
-              className="text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-1.5 rounded font-medium"
-              title="구글 폼 자동 등록 연동"
-            >
-              🔗 구글 폼 연동
-            </button>
-            <button onClick={load} className="text-xs text-gray-500 hover:text-gray-700 underline">
-              새로고침
-            </button>
+            {!editMode ? (
+              <>
+                <button onClick={() => setModalOpen(true)} className="btn-primary text-xs px-3 py-1.5">
+                  + 새 고객
+                </button>
+                <button
+                  onClick={() => setGuideOpen(true)}
+                  className="text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-1.5 rounded font-medium"
+                  title="구글 폼 자동 등록 연동"
+                >
+                  🔗 구글 폼 연동
+                </button>
+                <button
+                  onClick={() => setEditMode(true)}
+                  className="text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 px-2 py-1.5 rounded font-medium border border-gray-300"
+                >
+                  ✏️ 편집
+                </button>
+                <button onClick={load} className="text-xs text-gray-500 hover:text-gray-700 underline">
+                  새로고침
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-xs font-medium text-gray-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded">
+                  편집 모드 · {selected.size}명 선택됨
+                </span>
+                <button
+                  onClick={toggleSelectAll}
+                  className="text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 px-2 py-1.5 rounded font-medium border border-gray-300"
+                >
+                  {allFilteredSelected ? '전체 해제' : '전체 선택'}
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={selected.size === 0 || bulkDeleting}
+                  className="text-xs bg-red-500 text-white hover:bg-red-600 px-3 py-1.5 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  🗑️ 삭제 ({selected.size})
+                </button>
+                <button
+                  onClick={exitEditMode}
+                  disabled={bulkDeleting}
+                  className="text-xs text-gray-500 hover:text-gray-700 underline"
+                >
+                  취소
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -142,12 +225,25 @@ export default function CustomersListView() {
           <>
             <div className="md:hidden space-y-3">
               {filtered.map((c) => (
-                <button
+                <div
                   key={c.id}
-                  onClick={() => navigate(`/customers/${c.id}`)}
-                  className="w-full text-left bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:border-primary-300 transition-colors"
+                  onClick={() => editMode ? toggleSelect(c.id) : navigate(`/customers/${c.id}`)}
+                  className={`w-full text-left bg-white rounded-xl shadow-sm border p-4 transition-colors cursor-pointer ${
+                    editMode && selected.has(c.id)
+                      ? 'border-primary-500 ring-2 ring-primary-200'
+                      : 'border-gray-200 hover:border-primary-300'
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
+                    {editMode && (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(c.id)}
+                        onChange={() => toggleSelect(c.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-1 w-4 h-4 accent-primary-500 flex-shrink-0"
+                      />
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-sm text-gray-800 truncate">
                         {c.name}
@@ -174,7 +270,7 @@ export default function CustomersListView() {
                     <span>📍 {INQUIRY_SOURCE_LABELS[c.inquirySource]}</span>
                     <span>컨택 {c.contactCount}회</span>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
 
@@ -183,6 +279,17 @@ export default function CustomersListView() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
+                      {editMode && (
+                        <th className="px-3 py-3 w-10">
+                          <input
+                            type="checkbox"
+                            checked={allFilteredSelected}
+                            onChange={toggleSelectAll}
+                            className="w-4 h-4 accent-primary-500"
+                            title={allFilteredSelected ? '전체 해제' : '전체 선택'}
+                          />
+                        </th>
+                      )}
                       <th className="px-4 py-3 w-16">#</th>
                       <th className="px-4 py-3 w-36">이름 / 회사</th>
                       <th className="px-4 py-3 w-44">연락처</th>
@@ -197,9 +304,23 @@ export default function CustomersListView() {
                     {filtered.map((c) => (
                       <tr
                         key={c.id}
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/customers/${c.id}`)}
+                        className={`hover:bg-gray-50 cursor-pointer transition-colors ${
+                          editMode && selected.has(c.id) ? 'bg-primary-50' : ''
+                        }`}
+                        onClick={() =>
+                          editMode ? toggleSelect(c.id) : navigate(`/customers/${c.id}`)
+                        }
                       >
+                        {editMode && (
+                          <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selected.has(c.id)}
+                              onChange={() => toggleSelect(c.id)}
+                              className="w-4 h-4 accent-primary-500"
+                            />
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-gray-400">{c.id}</td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-gray-800">{c.name}</div>

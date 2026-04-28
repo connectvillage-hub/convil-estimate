@@ -42,6 +42,11 @@ const customersApi = {
     await axios.delete(`${getApiBase()}/api/customers/${id}`);
   },
 
+  async bulkDelete(ids: number[]): Promise<{ deleted: number }> {
+    const { data } = await axios.post(`${getApiBase()}/api/customers/bulk-delete`, { ids });
+    return data;
+  },
+
   async addContact(customerId: number, input: ContactInput): Promise<CustomerDetail> {
     const { data } = await axios.post(
       `${getApiBase()}/api/customers/${customerId}/contacts`,

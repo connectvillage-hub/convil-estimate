@@ -178,6 +178,24 @@ async def delete_customer(customer_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
+class BulkDeletePayload(BaseModel):
+    ids: List[int] = Field(default_factory=list)
+
+
+@router.post("/bulk-delete")
+async def bulk_delete_customers(
+    payload: BulkDeletePayload, db: Session = Depends(get_db)
+):
+    if not payload.ids:
+        return {"deleted": 0}
+    rows = db.query(Customer).filter(Customer.id.in_(payload.ids)).all()
+    count = len(rows)
+    for r in rows:
+        db.delete(r)
+    db.commit()
+    return {"deleted": count}
+
+
 # ── Contact (컨택 이력) CRUD ──
 
 @router.post("/{customer_id}/contacts", response_model=CustomerDetail)
