@@ -297,22 +297,13 @@ async def intake_from_webhook(
     db.add(customer)
     db.flush()
 
-    # 1차 컨택 자동 기록 (memo 또는 rawData 가 있으면)
-    parts = []
+    # 1차 컨택 자동 기록 (정리된 memo 만 사용 — rawData 는 디버깅용으로만 받고 저장 안 함)
     if payload.memo:
-        parts.append(f"📨 폼 문의:\n{payload.memo}")
-    if payload.rawData:
-        try:
-            parts.append("[원본 응답]\n" + json.dumps(payload.rawData, ensure_ascii=False, indent=2))
-        except Exception:
-            pass
-
-    if parts:
         contact = Contact(
             customer_id=customer.id,
             sequence=1,
             contacted_at=datetime.utcnow(),
-            content="\n\n".join(parts),
+            content=f"📨 폼 문의:\n{payload.memo}",
         )
         db.add(contact)
 
