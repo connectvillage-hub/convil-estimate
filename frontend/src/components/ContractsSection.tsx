@@ -7,7 +7,9 @@ import {
   ContractInput,
   Payment,
   PaymentInput,
+  ContractState,
   CONTRACT_STATE_LABELS,
+  CONTRACT_STATE_OPTIONS,
   CONTRACT_STATE_COLORS,
   PAYMENT_METHOD_LABELS,
 } from '../types/contract';
@@ -38,15 +40,41 @@ function formatDateTime(iso: string): string {
 
 const fmt = (n: number) => `₩${(n || 0).toLocaleString('ko-KR')}`;
 
+// 인라인 편집 폼 상태
+interface EditDraft {
+  title: string;
+  contractAmount: number;
+  contractDate: string;
+  state: ContractState;
+  taxInvoiceIssued: boolean;
+  memo: string;
+}
+
+function draftFrom(c: ContractDetail): EditDraft {
+  return {
+    title: c.title,
+    contractAmount: c.contractAmount,
+    contractDate: c.contractDate || new Date().toISOString().split('T')[0],
+    state: c.state,
+    taxInvoiceIssued: c.taxInvoiceIssued,
+    memo: c.memo,
+  };
+}
+
 export default function ContractsSection({ customerId }: Props) {
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 모달 상태
+  // 신규 계약 모달
   const [contractModalOpen, setContractModalOpen] = useState(false);
-  const [editingContract, setEditingContract] = useState<ContractDetail | null>(null);
 
+  // 인라인 편집 상태
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // 입금 모달
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentTargetContract, setPaymentTargetContract] = useState<ContractDetail | null>(null);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -55,8 +83,7 @@ export default function ContractsSection({ customerId }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const data = await contractsApi.listForCustomer(customerId);
-      setContracts(data);
+      setContracts(await contractsApi.listForCustomer(customerId));
     } catch (err) {
       console.error(err);
       setError('계약 정보를 불러오지 못했습니다.');
@@ -72,13 +99,42 @@ export default function ContractsSection({ customerId }: Props) {
 
   // ── Contract handlers ──
 
-  const handleContractSubmit = async (input: ContractInput) => {
-    if (editingContract) {
-      const updated = await contractsApi.update(editingContract.id, input);
-      setContracts((cs) => cs.map((c) => (c.id === updated.id ? updated : c)));
-    } else {
-      const created = await contractsApi.create(customerId, input);
-      setContracts((cs) => [created, ...cs]);
+  const handleCreateContract = async (input: ContractInput) => {
+    const created = await contractsApi.create(customerId, input);
+    setContracts((cs) => [created, ...cs]);
+  };
+
+  const startEdit = (c: ContractDetail) => {
+    setEditingId(c.id);
+    setEditDraft(draftFrom(c));
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditDraft(null);
+  };
+
+  const saveEdit = async (c: ContractDetail) => {
+    if (!editDraft) return;
+    setSavingEdit(true);
+    try {
+      const input: ContractInput = {
+        title: editDraft.title,
+        contractAmount: editDraft.contractAmount,
+        contractDate: editDraft.contractDate,
+        estimateId: c.estimateId,
+        state: editDraft.state,
+        taxInvoiceIssued: editDraft.taxInvoiceIssued,
+        memo: editDraft.memo,
+      };
+      const updated = await contractsApi.update(c.id, input);
+      setContracts((cs) => cs.map((x) => (x.id === updated.id ? updated : x)));
+      cancelEdit();
+    } catch (err) {
+      console.error(err);
+      alert('저장 중 오류가 발생했습니다.');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -89,6 +145,7 @@ export default function ContractsSection({ customerId }: Props) {
     try {
       await contractsApi.delete(c.id);
       setContracts((cs) => cs.filter((x) => x.id !== c.id));
+      if (editingId === c.id) cancelEdit();
     } catch (err) {
       console.error(err);
       alert('삭제 중 오류가 발생했습니다.');
@@ -138,10 +195,7 @@ export default function ContractsSection({ customerId }: Props) {
           계약 · 입금 관리
         </h2>
         <button
-          onClick={() => {
-            setEditingContract(null);
-            setContractModalOpen(true);
-          }}
+          onClick={() => setContractModalOpen(true)}
           className="btn-primary text-xs py-1.5 px-3"
         >
           + 새 계약
@@ -177,63 +231,179 @@ export default function ContractsSection({ customerId }: Props) {
       ) : (
         <div className="space-y-3">
           {contracts.map((c) => {
+            const isEditing = editingId === c.id;
             const isFullyPaid = c.remainingAmount <= 0 && c.contractAmount > 0;
-            // 결제 수단 요약 (중복 제거)
             const methodsUsed = Array.from(new Set(c.payments.map((p) => p.method)));
             const methodsLabel = methodsUsed.length === 0
-              ? '미입금'
-              : methodsUsed.map((m) => PAYMENT_METHOD_LABELS[m]).join(', ');
+              ? '—'
+              : methodsUsed.map((m) => PAYMENT_METHOD_LABELS[m]).join(' / ');
 
             return (
-              <div key={c.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                {/* 헤더: 제목 + 금액 + 상태 */}
+              <div
+                key={c.id}
+                className={`border rounded-lg overflow-hidden ${
+                  isEditing ? 'border-primary-400 ring-2 ring-primary-100' : 'border-gray-200'
+                }`}
+              >
+                {/* 헤더: ID + 상태 + 날짜 + 제목 + 금액 */}
                 <div className="px-3 sm:px-4 py-3 flex items-start justify-between gap-2 bg-gray-50 border-b border-gray-200">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="text-xs font-bold text-gray-500">#{c.id}</span>
-                      <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${CONTRACT_STATE_COLORS[c.state]}`}
-                      >
-                        {isFullyPaid && c.state === 'completed' ? '✅ 완료' : CONTRACT_STATE_LABELS[c.state]}
-                      </span>
-                      <span className="text-xs text-gray-400">{formatDate(c.contractDate)}</span>
+                      {!isEditing && (
+                        <>
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${CONTRACT_STATE_COLORS[c.state]}`}
+                          >
+                            {isFullyPaid && c.state === 'completed' ? '✅ 완료' : CONTRACT_STATE_LABELS[c.state]}
+                          </span>
+                          <span className="text-xs text-gray-400">{formatDate(c.contractDate)}</span>
+                        </>
+                      )}
                     </div>
-                    <div className="text-sm font-semibold text-gray-800 truncate">
-                      {c.title || '(제목 없음)'}
-                    </div>
+                    {isEditing && editDraft ? (
+                      <input
+                        type="text"
+                        className="form-input text-sm font-semibold"
+                        placeholder="계약 제목"
+                        value={editDraft.title}
+                        onChange={(e) => setEditDraft({ ...editDraft, title: e.target.value })}
+                      />
+                    ) : (
+                      <div className="text-sm font-semibold text-gray-800 truncate">
+                        {c.title || '(제목 없음)'}
+                      </div>
+                    )}
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="text-base font-bold text-primary-700">{fmt(c.contractAmount)}</div>
+                    {isEditing && editDraft ? (
+                      <input
+                        type="number"
+                        className="form-input text-right text-base font-bold w-36"
+                        min={0}
+                        step={10000}
+                        value={editDraft.contractAmount || ''}
+                        onChange={(e) => setEditDraft({ ...editDraft, contractAmount: Number(e.target.value) })}
+                      />
+                    ) : (
+                      <div className="text-base font-bold text-primary-700">{fmt(c.contractAmount)}</div>
+                    )}
                   </div>
                 </div>
 
-                {/* 정보 라인: 결제수단 · 세금계산서 */}
-                <div className="px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 text-xs border-b border-gray-100">
-                  <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
-                    💳 {methodsLabel}
-                  </span>
-                  {c.taxInvoiceIssued ? (
-                    <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded">
-                      📋 세금계산서 발행됨
+                {/* 정의 리스트 */}
+                <div className="px-3 sm:px-4 py-3 space-y-2 text-sm">
+                  {/* 입금완료 / 미입금 */}
+                  <div className="flex items-center">
+                    <span className="text-gray-500 w-24 flex-shrink-0">입금완료</span>
+                    <span className="font-semibold text-green-700">{fmt(c.paidAmount)}</span>
+                    <span className="text-gray-300 mx-2">/</span>
+                    <span className="text-gray-500">미입금</span>
+                    <span className={`font-semibold ml-1 ${c.remainingAmount > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+                      {fmt(c.remainingAmount)}
                     </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded">
-                      📋 세금계산서 미발행
-                    </span>
+                  </div>
+
+                  {/* 입금방법 */}
+                  <div className="flex items-center">
+                    <span className="text-gray-500 w-24 flex-shrink-0">입금방법</span>
+                    <span className="font-medium text-gray-700">{methodsLabel}</span>
+                  </div>
+
+                  {/* 세금계산서 (편집 모드에선 토글) */}
+                  <div className="flex items-center">
+                    <span className="text-gray-500 w-24 flex-shrink-0">세금계산서</span>
+                    {isEditing && editDraft ? (
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditDraft({ ...editDraft, taxInvoiceIssued: false })}
+                          className={`text-xs px-2 py-1 rounded border ${
+                            !editDraft.taxInvoiceIssued
+                              ? 'bg-amber-100 text-amber-700 border-amber-300'
+                              : 'bg-white text-gray-500 border-gray-300'
+                          }`}
+                        >
+                          미발행
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditDraft({ ...editDraft, taxInvoiceIssued: true })}
+                          className={`text-xs px-2 py-1 rounded border ${
+                            editDraft.taxInvoiceIssued
+                              ? 'bg-green-100 text-green-700 border-green-300'
+                              : 'bg-white text-gray-500 border-gray-300'
+                          }`}
+                        >
+                          발행
+                        </button>
+                      </div>
+                    ) : c.taxInvoiceIssued ? (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200">
+                        ✅ 발행
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                        ⚠️ 미발행
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 계약 상태 (편집 모드만) */}
+                  {isEditing && editDraft && (
+                    <>
+                      <div className="flex items-center">
+                        <span className="text-gray-500 w-24 flex-shrink-0">계약 상태</span>
+                        <div className="flex gap-1 flex-wrap">
+                          {CONTRACT_STATE_OPTIONS.map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => setEditDraft({ ...editDraft, state: s })}
+                              className={`text-xs px-2 py-1 rounded border ${
+                                editDraft.state === s
+                                  ? CONTRACT_STATE_COLORS[s]
+                                  : 'bg-white text-gray-500 border-gray-300'
+                              }`}
+                            >
+                              {CONTRACT_STATE_LABELS[s]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-gray-500 w-24 flex-shrink-0">계약일</span>
+                        <input
+                          type="date"
+                          className="form-input text-sm w-44"
+                          value={editDraft.contractDate}
+                          onChange={(e) => setEditDraft({ ...editDraft, contractDate: e.target.value })}
+                        />
+                      </div>
+                    </>
                   )}
+
+                  {/* 메모 */}
+                  <div className="flex items-start">
+                    <span className="text-gray-500 w-24 flex-shrink-0 pt-1">메모</span>
+                    {isEditing && editDraft ? (
+                      <textarea
+                        className="form-input min-h-[60px] flex-1 text-sm"
+                        placeholder="계약 관련 메모..."
+                        value={editDraft.memo}
+                        onChange={(e) => setEditDraft({ ...editDraft, memo: e.target.value })}
+                      />
+                    ) : c.memo ? (
+                      <span className="text-gray-700 whitespace-pre-wrap flex-1">{c.memo}</span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </div>
                 </div>
 
-                {/* 입금 진행 (미수금 있는 경우만) */}
-                {c.contractAmount > 0 && !isFullyPaid && (
-                  <div className="px-3 sm:px-4 py-2 border-b border-gray-100">
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-gray-600">
-                        입금 <span className="text-green-700 font-semibold">{fmt(c.paidAmount)}</span>
-                      </span>
-                      <span className="text-gray-600">
-                        잔금 <span className="text-amber-700 font-semibold">{fmt(c.remainingAmount)}</span>
-                      </span>
-                    </div>
+                {/* 입금 진행 바 (display mode 만, 미수금 있을 때만) */}
+                {!isEditing && c.contractAmount > 0 && !isFullyPaid && (
+                  <div className="px-3 sm:px-4 py-2 border-t border-gray-100">
                     <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-green-500 transition-all"
@@ -243,9 +413,9 @@ export default function ContractsSection({ customerId }: Props) {
                   </div>
                 )}
 
-                {/* 입금 내역 (있을 때만, 컴팩트하게) */}
-                {c.payments.length > 0 && (
-                  <div className="px-3 sm:px-4 py-2 space-y-1 border-b border-gray-100 bg-gray-50/50">
+                {/* 입금 내역 (display mode 만) */}
+                {!isEditing && c.payments.length > 0 && (
+                  <div className="px-3 sm:px-4 py-2 space-y-1 border-t border-gray-100 bg-gray-50/50">
                     {c.payments.map((p) => (
                       <div
                         key={p.id}
@@ -277,40 +447,54 @@ export default function ContractsSection({ customerId }: Props) {
                   </div>
                 )}
 
-                {/* 메모 (있을 때만) */}
-                {c.memo && (
-                  <div className="px-3 sm:px-4 py-2 text-[11px] text-gray-500 whitespace-pre-wrap border-b border-gray-100">
-                    {c.memo}
-                  </div>
-                )}
-
                 {/* 액션 */}
-                <div className="px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2 bg-white">
-                  {!isFullyPaid && (
-                    <button
-                      onClick={() => openPaymentModal(c, null)}
-                      className="text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-1 rounded font-medium"
-                    >
-                      + 잔금 입금
-                    </button>
+                <div className="px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2 bg-white border-t border-gray-100">
+                  {isEditing ? (
+                    <>
+                      <span className="text-xs text-primary-600 font-medium">편집 모드</span>
+                      <div className="flex items-center gap-1 ml-auto">
+                        <button
+                          onClick={cancelEdit}
+                          disabled={savingEdit}
+                          className="text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={() => saveEdit(c)}
+                          disabled={savingEdit}
+                          className="btn-primary text-xs py-1 px-3"
+                        >
+                          {savingEdit ? '저장 중...' : '저장'}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {!isFullyPaid && (
+                        <button
+                          onClick={() => openPaymentModal(c, null)}
+                          className="text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-1 rounded font-medium"
+                        >
+                          + 잔금 입금
+                        </button>
+                      )}
+                      <div className="flex items-center gap-1 ml-auto">
+                        <button
+                          onClick={() => startEdit(c)}
+                          className="text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                          ✏️ 수정
+                        </button>
+                        <button
+                          onClick={() => handleDeleteContract(c)}
+                          className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded"
+                        >
+                          🗑️ 삭제
+                        </button>
+                      </div>
+                    </>
                   )}
-                  <div className="flex items-center gap-1 ml-auto">
-                    <button
-                      onClick={() => {
-                        setEditingContract(c);
-                        setContractModalOpen(true);
-                      }}
-                      className="text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded"
-                    >
-                      수정
-                    </button>
-                    <button
-                      onClick={() => handleDeleteContract(c)}
-                      className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded"
-                    >
-                      삭제
-                    </button>
-                  </div>
                 </div>
               </div>
             );
@@ -318,14 +502,12 @@ export default function ContractsSection({ customerId }: Props) {
         </div>
       )}
 
+      {/* 신규 계약 모달 (수정은 인라인이라 사용 안 함) */}
       <ContractFormModal
         open={contractModalOpen}
-        initial={editingContract}
-        onClose={() => {
-          setContractModalOpen(false);
-          setEditingContract(null);
-        }}
-        onSubmit={handleContractSubmit}
+        initial={null}
+        onClose={() => setContractModalOpen(false)}
+        onSubmit={handleCreateContract}
       />
 
       <PaymentFormModal
