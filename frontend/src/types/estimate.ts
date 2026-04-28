@@ -31,6 +31,7 @@ export interface EstimateFormData {
   discount: number;
   estimateDate: string;
   clientType: ClientType;
+  customerId?: number | null;
 }
 
 export const CLIENT_TYPE_LABELS: Record<ClientType, string> = {

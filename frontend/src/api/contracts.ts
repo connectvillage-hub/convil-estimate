@@ -22,6 +22,13 @@ const contractsApi = {
     return data;
   },
 
+  async createFromEstimate(customerId: number, estimateId: number): Promise<ContractDetail> {
+    const { data } = await axios.post(
+      `${getApiBase()}/api/customers/${customerId}/contracts/from-estimate/${estimateId}`,
+    );
+    return data;
+  },
+
   async get(contractId: number): Promise<ContractDetail> {
     const { data } = await axios.get(`${getApiBase()}/api/contracts/${contractId}`);
     return data;

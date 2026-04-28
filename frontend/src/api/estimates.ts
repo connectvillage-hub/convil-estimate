@@ -8,6 +8,7 @@ const getApiBase = () =>
 
 export interface SavedEstimateListItem {
   id: number;
+  customerId?: number | null;
   customerName: string;
   projectName: string;
   estimateDate: string;
@@ -24,6 +25,13 @@ export interface SavedEstimateDetail extends SavedEstimateListItem {
 const estimatesApi = {
   async list(): Promise<SavedEstimateListItem[]> {
     const { data } = await axios.get(`${getApiBase()}/api/estimate/saved`);
+    return data;
+  },
+
+  async listByCustomer(customerId: number): Promise<SavedEstimateListItem[]> {
+    const { data } = await axios.get(
+      `${getApiBase()}/api/estimate/saved/by-customer/${customerId}`,
+    );
     return data;
   },
 

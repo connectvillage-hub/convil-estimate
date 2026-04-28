@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import customersApi from '../api/customers';
 import CustomerFormModal from '../components/CustomerFormModal';
 import ContractsSection from '../components/ContractsSection';
+import CustomerEstimatesSection from '../components/CustomerEstimatesSection';
 import {
   CustomerDetail,
   CustomerInput,
@@ -40,6 +41,9 @@ export default function CustomerDetailPage() {
   // 새 컨택 입력
   const [newContent, setNewContent] = useState('');
   const [addingContact, setAddingContact] = useState(false);
+
+  // 견적→계약 변환 후 ContractsSection 강제 리프레시
+  const [contractsRefreshKey, setContractsRefreshKey] = useState(0);
 
   const load = async () => {
     setLoading(true);
@@ -245,8 +249,15 @@ export default function CustomerDetailPage() {
             )}
           </section>
 
+          {/* 견적 이력 */}
+          <CustomerEstimatesSection
+            customerId={customerId}
+            customerName={customer.name}
+            onContractCreated={() => setContractsRefreshKey((k) => k + 1)}
+          />
+
           {/* 계약 / 입금 관리 */}
-          <ContractsSection customerId={customerId} />
+          <ContractsSection key={contractsRefreshKey} customerId={customerId} />
         </div>
       </div>
 

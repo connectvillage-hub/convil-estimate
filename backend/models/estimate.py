@@ -52,6 +52,7 @@ class EstimateRequest(BaseModel):
     discount: float = 0
     estimateDate: str = ""
     clientType: ClientType = ClientType.customer
+    customerId: Optional[int] = None
 
 
 class ItemDetail(BaseModel):
@@ -79,6 +80,7 @@ class SavedEstimateCreate(BaseModel):
 
 class SavedEstimateListItem(BaseModel):
     id: int
+    customerId: Optional[int] = None
     customerName: str
     projectName: str
     estimateDate: str
@@ -90,6 +92,7 @@ class SavedEstimateListItem(BaseModel):
 
 class SavedEstimateDetail(BaseModel):
     id: int
+    customerId: Optional[int] = None
     customerName: str
     projectName: str
     estimateDate: str

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
   EstimateFormData,
@@ -9,6 +9,8 @@ import {
 } from '../types/estimate';
 import { getPyeongRange, formatCurrency } from '../utils/calculate';
 import estimatesApi from '../api/estimates';
+import customersApi from '../api/customers';
+import type { CustomerListItem } from '../types/customer';
 
 interface Props {
   form: EstimateFormData;
@@ -26,6 +28,27 @@ function newId() {
 export default function EstimateForm({ form, onChange, subtotal, savedId, onSaved }: Props) {
   const [downloading, setDownloading] = useState<'excel' | 'pdf' | null>(null);
   const [saving, setSaving] = useState(false);
+  const [customerList, setCustomerList] = useState<CustomerListItem[]>([]);
+
+  useEffect(() => {
+    customersApi.list().then(setCustomerList).catch(() => setCustomerList([]));
+  }, []);
+
+  const handleCustomerSelect = (idStr: string) => {
+    if (idStr === '') {
+      onChange({ ...form, customerId: null });
+      return;
+    }
+    const id = Number(idStr);
+    const c = customerList.find((x) => x.id === id);
+    if (c) {
+      onChange({
+        ...form,
+        customerId: c.id,
+        customerName: c.name,
+      });
+    }
+  };
 
   // 할인 % (소수 1자리). subtotal 이 0 이면 0 으로 표시.
   const discountPercent =
@@ -137,6 +160,28 @@ export default function EstimateForm({ form, onChange, subtotal, savedId, onSave
       {/* ── 기본 정보 ── */}
       <div className="section-card">
         <h3 className="section-title">기본 정보</h3>
+        <div className="grid grid-cols-1 gap-3 mb-3">
+          <div>
+            <label className="form-label">고객 연결 (선택)</label>
+            <select
+              className="form-select"
+              value={form.customerId ?? ''}
+              onChange={(e) => handleCustomerSelect(e.target.value)}
+            >
+              <option value="">— 연결 안 함 (직접 입력) —</option>
+              {customerList.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.companyName ? ` · ${c.companyName}` : ''}{c.phone ? ` (${c.phone})` : ''}
+                </option>
+              ))}
+            </select>
+            {form.customerId && (
+              <p className="mt-1 text-[11px] text-primary-600">
+                ✓ 이 견적은 고객 #{form.customerId} 에 연결됩니다.
+              </p>
+            )}
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="form-label">{form.clientType === 'contractor' ? '시공사명' : '고객명'}</label>

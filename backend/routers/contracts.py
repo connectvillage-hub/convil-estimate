@@ -13,6 +13,7 @@ from models.contract_schemas import (
     PaymentInput,
     PaymentResponse,
 )
+from models.saved_estimate import SavedEstimate
 
 router = APIRouter(tags=["contracts"])
 
@@ -90,6 +91,36 @@ async def create_contract(
         contract_date=payload.contractDate,
         state=payload.state,
         memo=payload.memo,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return _contract_to_detail(row)
+
+
+@router.post(
+    "/api/customers/{customer_id}/contracts/from-estimate/{estimate_id}",
+    response_model=ContractDetail,
+)
+async def create_contract_from_estimate(
+    customer_id: int, estimate_id: int, db: Session = Depends(get_db)
+):
+    """저장된 견적의 최종 금액·프로젝트명을 그대로 받아 새 계약 생성."""
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="고객을 찾을 수 없습니다")
+    estimate = db.query(SavedEstimate).filter(SavedEstimate.id == estimate_id).first()
+    if not estimate:
+        raise HTTPException(status_code=404, detail="견적을 찾을 수 없습니다")
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    row = Contract(
+        customer_id=customer_id,
+        estimate_id=estimate_id,
+        title=estimate.project_name or f"견적 #{estimate_id} 계약",
+        contract_amount=estimate.final_amount or 0,
+        contract_date=today,
+        state="active",
+        memo=f"견적 #{estimate_id} 으로부터 자동 생성",
     )
     db.add(row)
     db.commit()

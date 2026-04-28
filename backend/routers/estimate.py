@@ -69,9 +69,13 @@ async def calculate_endpoint(req: EstimateRequest):
 # ─────────── 저장된 견적 CRUD ───────────
 
 def _to_detail(row: SavedEstimate) -> SavedEstimateDetail:
-    form = EstimateRequest(**row.form_data)
+    form_data = dict(row.form_data or {})
+    # row 의 customer_id 가 truth source — form_data 에도 동기화
+    form_data["customerId"] = row.customer_id
+    form = EstimateRequest(**form_data)
     return SavedEstimateDetail(
         id=row.id,
+        customerId=row.customer_id,
         customerName=row.customer_name or "",
         projectName=row.project_name or "",
         estimateDate=row.estimate_date or "",
@@ -87,6 +91,7 @@ def _to_list_item(row: SavedEstimate) -> SavedEstimateListItem:
     client_type = (row.form_data or {}).get("clientType", "customer")
     return SavedEstimateListItem(
         id=row.id,
+        customerId=row.customer_id,
         customerName=row.customer_name or "",
         projectName=row.project_name or "",
         estimateDate=row.estimate_date or "",
@@ -102,6 +107,7 @@ async def create_saved_estimate(payload: SavedEstimateCreate, db: Session = Depe
     req = payload.form
     result = calculate(req)
     row = SavedEstimate(
+        customer_id=req.customerId,
         customer_name=req.customerName or "",
         project_name=req.projectName or "",
         estimate_date=req.estimateDate or "",
@@ -137,6 +143,7 @@ async def update_saved_estimate(
         raise HTTPException(status_code=404, detail="견적을 찾을 수 없습니다")
     req = payload.form
     result = calculate(req)
+    row.customer_id = req.customerId
     row.customer_name = req.customerName or ""
     row.project_name = req.projectName or ""
     row.estimate_date = req.estimateDate or ""
@@ -155,3 +162,14 @@ async def delete_saved_estimate(estimate_id: int, db: Session = Depends(get_db))
     db.delete(row)
     db.commit()
     return {"ok": True}
+
+
+@router.get("/saved/by-customer/{customer_id}", response_model=List[SavedEstimateListItem])
+async def list_estimates_for_customer(customer_id: int, db: Session = Depends(get_db)):
+    rows = (
+        db.query(SavedEstimate)
+        .filter(SavedEstimate.customer_id == customer_id)
+        .order_by(SavedEstimate.updated_at.desc())
+        .all()
+    )
+    return [_to_list_item(r) for r in rows]

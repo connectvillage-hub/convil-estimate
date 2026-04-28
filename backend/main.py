@@ -18,6 +18,21 @@ import models.contract  # noqa: F401
 # DB 테이블 생성
 Base.metadata.create_all(bind=engine)
 
+
+def _migrate_schema():
+    """기존 테이블에 누락된 컬럼 추가 (멱등). create_all 은 새 컬럼 추가 안 함."""
+    from sqlalchemy import inspect, text
+    inspector = inspect(engine)
+    if "saved_estimates" in inspector.get_table_names():
+        cols = [c["name"] for c in inspector.get_columns("saved_estimates")]
+        if "customer_id" not in cols:
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE saved_estimates ADD COLUMN customer_id INTEGER"))
+                conn.commit()
+
+
+_migrate_schema()
+
 app = FastAPI(
     title="컨빌 디자인 견적서 API",
     description="인테리어 설계 회사 컨빌디자인 견적서 자동 생성 시스템",

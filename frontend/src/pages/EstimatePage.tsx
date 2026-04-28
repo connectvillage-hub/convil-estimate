@@ -47,9 +47,13 @@ export default function EstimatePage({ clientType }: Props) {
     setSavedId(null);
   }, [clientType]);
 
-  // 견적 이력에서 "불러오기" 시 location.state.loadId 로 전달
+  // 견적 이력 / 고객 상세에서 진입 시:
+  //   - state.loadId  : 기존 견적 불러오기
+  //   - state.customerId/customerName : 고객 상세 → "+ 새 견적" 으로 미리 채우기
   useEffect(() => {
-    const state = location.state as { loadId?: number } | null;
+    const state = location.state as
+      | { loadId?: number; customerId?: number; customerName?: string }
+      | null;
     if (state?.loadId) {
       estimatesApi
         .get(state.loadId)
@@ -64,6 +68,14 @@ export default function EstimatePage({ clientType }: Props) {
         .finally(() => {
           navigate(location.pathname, { replace: true, state: null });
         });
+    } else if (state?.customerId) {
+      setForm((f) => ({
+        ...f,
+        customerId: state.customerId,
+        customerName: state.customerName || f.customerName,
+      }));
+      setSavedId(null);
+      navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.state, location.pathname, navigate]);
 

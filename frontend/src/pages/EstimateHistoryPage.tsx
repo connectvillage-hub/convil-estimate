@@ -214,7 +214,23 @@ export default function EstimateHistoryPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-medium">{it.customerName || '—'}</td>
+                        <td className="px-4 py-3 font-medium">
+                          <div className="flex items-center gap-1">
+                            <span>{it.customerName || '—'}</span>
+                            {it.customerId && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/customers/${it.customerId}`);
+                                }}
+                                className="text-[10px] text-primary-600 hover:underline"
+                                title="연결된 고객 페이지"
+                              >
+                                🔗
+                              </button>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 py-3 text-gray-600">{it.projectName || '—'}</td>
                         <td className="px-4 py-3 text-gray-500">{it.estimateDate || '—'}</td>
                         <td className="px-4 py-3 text-right font-semibold text-primary-700">
