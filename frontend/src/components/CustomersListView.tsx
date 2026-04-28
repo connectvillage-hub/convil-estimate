@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import customersApi from '../api/customers';
 import CustomerFormModal from './CustomerFormModal';
+import GoogleFormGuideModal from './GoogleFormGuideModal';
 import {
   CustomerListItem,
   CustomerInput,
@@ -34,6 +35,7 @@ export default function CustomersListView() {
   const [filterStatus, setFilterStatus] = useState<ContractStatus | 'all'>('all');
   const [filterSource, setFilterSource] = useState<InquirySource | 'all'>('all');
   const [modalOpen, setModalOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const navigate = useNavigate();
 
   const load = async () => {
@@ -109,6 +111,13 @@ export default function CustomersListView() {
             </select>
             <button onClick={() => setModalOpen(true)} className="btn-primary text-xs px-3 py-1.5">
               + 새 고객
+            </button>
+            <button
+              onClick={() => setGuideOpen(true)}
+              className="text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-1.5 rounded font-medium"
+              title="구글 폼 자동 등록 연동"
+            >
+              🔗 구글 폼 연동
             </button>
             <button onClick={load} className="text-xs text-gray-500 hover:text-gray-700 underline">
               새로고침
@@ -224,6 +233,11 @@ export default function CustomersListView() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleCreate}
+      />
+
+      <GoogleFormGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
       />
     </>
   );

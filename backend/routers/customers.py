@@ -1,7 +1,10 @@
+import json
+import os
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
@@ -246,4 +249,73 @@ async def delete_contact(
     db.delete(contact)
     db.commit()
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    return _customer_to_detail(customer)
+
+
+# ── 외부 폼(구글 폼 등) 자동 등록 Webhook ──
+
+class IntakePayload(BaseModel):
+    """구글 폼 / 외부 시스템에서 보내는 고객 등록 페이로드."""
+    name: str = Field(min_length=1, max_length=200)
+    companyName: str = ""
+    phone: str = ""
+    email: str = ""
+    address: str = ""
+    manager: str = ""
+    inquirySource: str = "other"
+    memo: str = ""              # 1차 컨택 내용으로 자동 기록
+    rawData: Optional[Dict[str, Any]] = None  # 원본 폼 응답 (참고용)
+
+
+@router.post("/intake", response_model=CustomerDetail)
+async def intake_from_webhook(
+    payload: IntakePayload,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """공개 웹훅 — 구글 폼 등에서 호출해서 고객 자동 등록.
+    환경변수 WEBHOOK_TOKEN 이 설정된 경우 X-Webhook-Token 헤더 일치해야 함."""
+    expected = os.getenv("WEBHOOK_TOKEN")
+    if expected:
+        provided = request.headers.get("X-Webhook-Token") or request.headers.get("x-webhook-token") or ""
+        if provided != expected:
+            raise HTTPException(status_code=401, detail="Invalid webhook token")
+
+    src = payload.inquirySource if payload.inquirySource in INQUIRY_SOURCES else "other"
+
+    customer = Customer(
+        name=payload.name,
+        company_name=payload.companyName,
+        phone=payload.phone,
+        email=payload.email,
+        address=payload.address,
+        manager=payload.manager,
+        memo="",
+        inquiry_source=src,
+        contract_status="pre_consultation",
+    )
+    db.add(customer)
+    db.flush()
+
+    # 1차 컨택 자동 기록 (memo 또는 rawData 가 있으면)
+    parts = []
+    if payload.memo:
+        parts.append(f"📨 폼 문의:\n{payload.memo}")
+    if payload.rawData:
+        try:
+            parts.append("[원본 응답]\n" + json.dumps(payload.rawData, ensure_ascii=False, indent=2))
+        except Exception:
+            pass
+
+    if parts:
+        contact = Contact(
+            customer_id=customer.id,
+            sequence=1,
+            contacted_at=datetime.utcnow(),
+            content="\n\n".join(parts),
+        )
+        db.add(contact)
+
+    db.commit()
+    db.refresh(customer)
     return _customer_to_detail(customer)
