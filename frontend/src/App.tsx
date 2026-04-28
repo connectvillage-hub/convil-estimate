@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import EstimatePage from './pages/EstimatePage';
 import EstimateHistoryPage from './pages/EstimateHistoryPage';
+import CustomersPage from './pages/CustomersPage';
+import CustomerDetailPage from './pages/CustomerDetailPage';
 import MaterialsPage from './pages/MaterialsPage';
 
 function App() {
@@ -38,6 +40,8 @@ function App() {
               <Route path="/estimate" element={<EstimatePage clientType="customer" />} />
               <Route path="/contractor-estimate" element={<EstimatePage clientType="contractor" />} />
               <Route path="/estimates" element={<EstimateHistoryPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/customers/:id" element={<CustomerDetailPage />} />
               <Route path="/materials" element={<MaterialsPage />} />
             </Routes>
           </main>
