@@ -22,6 +22,13 @@ function thisMonthKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function monthLabel(monthKey: string): string {
+  // YYYY-MM → "2026년 4월"
+  if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) return monthKey;
+  const [y, m] = monthKey.split('-');
+  return `${y}년 ${parseInt(m, 10)}월`;
+}
+
 export default function AllPaymentsView() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +72,23 @@ export default function AllPaymentsView() {
       result[p.method] = (result[p.method] || 0) + (p.amount || 0);
     });
     return result;
+  }, [filteredPayments]);
+
+  // 월별 그룹화 (최신 순)
+  const monthGroups = useMemo(() => {
+    const groups = new Map<string, PaymentRow[]>();
+    for (const p of filteredPayments) {
+      const month = (p.paidAt || '').slice(0, 7); // YYYY-MM
+      if (!groups.has(month)) groups.set(month, []);
+      groups.get(month)!.push(p);
+    }
+    // 월별 키를 내림차순 정렬
+    const sortedKeys = Array.from(groups.keys()).sort().reverse();
+    return sortedKeys.map((key) => ({
+      month: key,
+      items: groups.get(key)!,
+      total: groups.get(key)!.reduce((s, p) => s + (p.amount || 0), 0),
+    }));
   }, [filteredPayments]);
 
   return (
@@ -122,85 +146,136 @@ export default function AllPaymentsView() {
               </button>
             </div>
 
-            {filteredPayments.length === 0 ? (
+            {/* 월별 매출 한눈에 (필터 미적용일 때만) */}
+            {!filterMonth && monthGroups.length > 1 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-3">
+                <div className="text-xs text-gray-500 mb-2 font-medium">📊 월별 입금 합계</div>
+                <div className="flex items-end gap-2 h-20">
+                  {(() => {
+                    const recent = monthGroups.slice(0, 12).reverse();
+                    const max = Math.max(1, ...recent.map((g) => g.total));
+                    return recent.map((g) => {
+                      const heightPct = (g.total / max) * 100;
+                      return (
+                        <button
+                          key={g.month}
+                          onClick={() => setFilterMonth(g.month)}
+                          className="flex-1 flex flex-col items-center gap-1 group cursor-pointer"
+                          title={`${monthLabel(g.month)}: ${fmt(g.total)}`}
+                        >
+                          <div className="text-[9px] text-gray-500 group-hover:text-primary-600 font-medium">
+                            {fmtShort(g.total)}
+                          </div>
+                          <div className="w-full flex-1 flex items-end">
+                            <div
+                              className="w-full bg-primary-300 group-hover:bg-primary-500 rounded-t transition-colors"
+                              style={{ height: `${Math.max(2, heightPct)}%` }}
+                            />
+                          </div>
+                          <div className="text-[9px] text-gray-400 group-hover:text-primary-600">
+                            {g.month.slice(-2)}월
+                          </div>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {monthGroups.length === 0 ? (
               <div className="text-center text-gray-400 py-10">
                 {payments.length === 0
                   ? '아직 입금 내역이 없습니다. 고객 상세 페이지에서 입금을 등록해보세요.'
                   : '조건에 맞는 입금이 없습니다.'}
               </div>
             ) : (
-              <>
-                <div className="md:hidden space-y-2">
-                  {filteredPayments.map((p) => (
-                    <button
-                      key={p.paymentId}
-                      onClick={() => navigate(`/customers/${p.customerId}`)}
-                      className="w-full text-left bg-white rounded-xl border border-gray-200 p-3 hover:border-primary-300 transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-1">
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold text-gray-800 truncate">
-                            {p.customerName}
-                          </div>
-                          <div className="text-[10px] text-gray-400 truncate">
-                            {p.contractTitle || `계약 #${p.contractId}`}
-                          </div>
-                        </div>
-                        <div className="text-sm font-bold text-green-700 flex-shrink-0 ml-2">
-                          {fmt(p.amount)}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-[10px] text-gray-500">
-                        <span className="font-medium">{PAYMENT_METHOD_LABELS[p.method]}</span>
-                        <span>{formatDateTime(p.paidAt)}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+              monthGroups.map((group) => (
+                <div key={group.month} className="space-y-2">
+                  {/* 월별 헤더 */}
+                  <div className="flex items-center justify-between bg-primary-50 border border-primary-200 rounded-lg px-3 sm:px-4 py-2">
+                    <span className="text-sm font-bold text-primary-700">
+                      📅 {monthLabel(group.month)}
+                    </span>
+                    <span className="text-xs text-primary-700">
+                      {group.items.length}건 · <span className="font-bold">{fmt(group.total)}</span>
+                    </span>
+                  </div>
 
-                <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
-                          <th className="px-4 py-3">고객</th>
-                          <th className="px-4 py-3">계약</th>
-                          <th className="px-4 py-3 w-32">결제 수단</th>
-                          <th className="px-4 py-3 text-right w-36">금액</th>
-                          <th className="px-4 py-3 w-44">입금 일시</th>
-                          <th className="px-4 py-3">메모</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {filteredPayments.map((p) => (
-                          <tr
-                            key={p.paymentId}
-                            onClick={() => navigate(`/customers/${p.customerId}`)}
-                            className="hover:bg-gray-50 cursor-pointer transition-colors"
-                          >
-                            <td className="px-4 py-3 font-medium text-gray-800">{p.customerName}</td>
-                            <td className="px-4 py-3 text-xs text-gray-600 truncate max-w-xs">
-                              {p.contractTitle || `#${p.contractId}`}
-                            </td>
-                            <td className="px-4 py-3 text-xs text-gray-600">
-                              {PAYMENT_METHOD_LABELS[p.method]}
-                            </td>
-                            <td className="px-4 py-3 text-right font-semibold text-green-700">
-                              {fmt(p.amount)}
-                            </td>
-                            <td className="px-4 py-3 text-xs text-gray-500">
-                              {formatDateTime(p.paidAt)}
-                            </td>
-                            <td className="px-4 py-3 text-xs text-gray-500 truncate max-w-xs">
-                              {p.memo || '—'}
-                            </td>
+                  {/* 모바일: 카드 */}
+                  <div className="md:hidden space-y-2">
+                    {group.items.map((p) => (
+                      <button
+                        key={p.paymentId}
+                        onClick={() => navigate(`/customers/${p.customerId}`)}
+                        className="w-full text-left bg-white rounded-xl border border-gray-200 p-3 hover:border-primary-300 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold text-gray-800 truncate">
+                              {p.customerName}
+                            </div>
+                            <div className="text-[10px] text-gray-400 truncate">
+                              {p.contractTitle || `계약 #${p.contractId}`}
+                            </div>
+                          </div>
+                          <div className="text-sm font-bold text-green-700 flex-shrink-0 ml-2">
+                            {fmt(p.amount)}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-gray-500">
+                          <span className="font-medium">{PAYMENT_METHOD_LABELS[p.method]}</span>
+                          <span>{formatDateTime(p.paidAt)}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 태블릿+ 테이블 */}
+                  <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-2">고객</th>
+                            <th className="px-4 py-2">계약</th>
+                            <th className="px-4 py-2 w-32">결제 수단</th>
+                            <th className="px-4 py-2 text-right w-36">금액</th>
+                            <th className="px-4 py-2 w-44">입금 일시</th>
+                            <th className="px-4 py-2">메모</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {group.items.map((p) => (
+                            <tr
+                              key={p.paymentId}
+                              onClick={() => navigate(`/customers/${p.customerId}`)}
+                              className="hover:bg-gray-50 cursor-pointer transition-colors"
+                            >
+                              <td className="px-4 py-2 font-medium text-gray-800">{p.customerName}</td>
+                              <td className="px-4 py-2 text-xs text-gray-600 truncate max-w-xs">
+                                {p.contractTitle || `#${p.contractId}`}
+                              </td>
+                              <td className="px-4 py-2 text-xs text-gray-600">
+                                {PAYMENT_METHOD_LABELS[p.method]}
+                              </td>
+                              <td className="px-4 py-2 text-right font-semibold text-green-700">
+                                {fmt(p.amount)}
+                              </td>
+                              <td className="px-4 py-2 text-xs text-gray-500">
+                                {formatDateTime(p.paidAt)}
+                              </td>
+                              <td className="px-4 py-2 text-xs text-gray-500 truncate max-w-xs">
+                                {p.memo || '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-              </>
+              ))
             )}
           </>
         )}
@@ -216,4 +291,11 @@ function SmallKpi({ label, value }: { label: string; value: string }) {
       <div className="text-sm sm:text-base font-bold text-gray-800 break-keep">{value}</div>
     </div>
   );
+}
+
+function fmtShort(n: number): string {
+  if (!n) return '';
+  if (n >= 100000000) return `${(n / 100000000).toFixed(1)}억`;
+  if (n >= 10000) return `${Math.round(n / 10000)}만`;
+  return n.toLocaleString('ko-KR');
 }
