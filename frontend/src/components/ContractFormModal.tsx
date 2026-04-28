@@ -149,7 +149,7 @@ export default function ContractFormModal({ open, initial, onClose, onSubmit }: 
                 />
               </div>
               <div>
-                <label className="form-label">계약일</label>
+                <label className="form-label">입금일</label>
                 <input
                   type="date"
                   className="form-input"
@@ -215,10 +215,10 @@ export default function ContractFormModal({ open, initial, onClose, onSubmit }: 
               </div>
             )}
 
-            {/* 상태 — 수정 모드에서만 표시 */}
+            {/* 입금 상태 — 수정 모드에서만 표시 */}
             {isEdit && (
               <div>
-                <label className="form-label">상태</label>
+                <label className="form-label">입금 상태</label>
                 <select
                   className="form-select"
                   value={form.state}

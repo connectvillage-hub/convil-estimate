@@ -127,7 +127,21 @@ export default function ContractsSection({ customerId }: Props) {
         taxInvoiceIssued: editDraft.taxInvoiceIssued,
         memo: editDraft.memo,
       };
-      const updated = await contractsApi.update(c.id, input);
+
+      let updated = await contractsApi.update(c.id, input);
+
+      // 입금 상태를 '완료' 로 바꿨고 미수금이 남아있으면 자동으로 잔금 입금 등록
+      if (editDraft.state === 'completed' && updated.remainingAmount > 0) {
+        // 기존 입금에서 사용된 결제수단 우선, 없으면 계좌이체
+        const existingMethods = updated.payments.map((p) => p.method);
+        const defaultMethod = existingMethods[0] || 'bank_transfer';
+        updated = await contractsApi.addPayment(c.id, {
+          amount: updated.remainingAmount,
+          method: defaultMethod,
+          memo: '잔금 자동 입금 (입금 상태: 완료)',
+        });
+      }
+
       setContracts((cs) => cs.map((x) => (x.id === updated.id ? updated : x)));
       cancelEdit();
     } catch (err) {
@@ -349,11 +363,11 @@ export default function ContractsSection({ customerId }: Props) {
                     )}
                   </div>
 
-                  {/* 계약 상태 (편집 모드만) */}
+                  {/* 입금 상태 (편집 모드만) */}
                   {isEditing && editDraft && (
                     <>
                       <div className="flex items-center">
-                        <span className="text-gray-500 w-24 flex-shrink-0">계약 상태</span>
+                        <span className="text-gray-500 w-24 flex-shrink-0">입금 상태</span>
                         <div className="flex gap-1 flex-wrap">
                           {CONTRACT_STATE_OPTIONS.map((s) => (
                             <button
@@ -371,8 +385,13 @@ export default function ContractsSection({ customerId }: Props) {
                           ))}
                         </div>
                       </div>
+                      {editDraft.state === 'completed' && c.remainingAmount > 0 && (
+                        <div className="flex items-center text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 ml-24">
+                          ⚡ 저장 시 잔금 {fmt(c.remainingAmount)} 자동 입금 처리됨 (계좌이체)
+                        </div>
+                      )}
                       <div className="flex items-center">
-                        <span className="text-gray-500 w-24 flex-shrink-0">계약일</span>
+                        <span className="text-gray-500 w-24 flex-shrink-0">입금일</span>
                         <input
                           type="date"
                           className="form-input text-sm w-44"
